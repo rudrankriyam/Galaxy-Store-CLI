@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -85,15 +86,17 @@ type MetadataIdentity struct {
 // Plan is deterministic: identical local inputs and options produce the same
 // plan ID and ordered stages. It contains no wall-clock data.
 type Plan struct {
-	SchemaVersion               int              `json:"schemaVersion"`
-	ID                          string           `json:"id"`
-	ContentID                   string           `json:"contentId"`
-	AppStatus                   string           `json:"appStatus"`
-	Binary                      BinaryIdentity   `json:"binary"`
-	Metadata                    MetadataIdentity `json:"metadata"`
-	GMS                         string           `json:"gms"`
-	CopyDeviceConfigurationFrom string           `json:"copyDeviceConfigurationFrom,omitempty"`
-	Steps                       []Step           `json:"steps"`
+	SchemaVersion               int               `json:"schemaVersion"`
+	ID                          string            `json:"id"`
+	ContentID                   string            `json:"contentId"`
+	AppStatus                   string            `json:"appStatus"`
+	Binary                      BinaryIdentity    `json:"binary"`
+	Metadata                    MetadataIdentity  `json:"metadata"`
+	MetadataChanges             []metadata.Change `json:"metadataChanges"`
+	MetadataDestructive         bool              `json:"metadataDestructive"`
+	GMS                         string            `json:"gms"`
+	CopyDeviceConfigurationFrom string            `json:"copyDeviceConfigurationFrom,omitempty"`
+	Steps                       []Step            `json:"steps"`
 }
 
 // BuildPlan validates all local inputs before any remote service can be
@@ -132,6 +135,10 @@ func BuildPlan(request Request) (Plan, error) {
 	if bundle.Manifest.AppStatus != metadata.AppStatusRegistration {
 		return Plan{}, errors.New("metadata bundle must target exactly REGISTRATION")
 	}
+	metadataPlan, err := metadata.Diff(bundle.Source, bundle.Metadata)
+	if err != nil {
+		return Plan{}, fmt.Errorf("plan shipping metadata changes: %w", err)
+	}
 
 	plan := Plan{
 		SchemaVersion:               PlanSchemaVersion,
@@ -139,6 +146,8 @@ func BuildPlan(request Request) (Plan, error) {
 		AppStatus:                   Registration,
 		Binary:                      binary,
 		Metadata:                    metadataIdentity,
+		MetadataChanges:             metadataPlan.Changes,
+		MetadataDestructive:         metadataPlan.HasDestructiveChanges(),
 		GMS:                         gms,
 		CopyDeviceConfigurationFrom: request.CopyDeviceConfigurationFrom,
 		Steps:                       OrderedSteps(),
@@ -164,12 +173,20 @@ func (plan Plan) ValidateInputs() error {
 	if binary.Size != plan.Binary.Size || binary.SHA256 != plan.Binary.SHA256 {
 		return errors.New("shipping binary changed after the plan was created")
 	}
-	_, identity, err := inspectMetadata(plan.Metadata.Directory)
+	bundle, identity, err := inspectMetadata(plan.Metadata.Directory)
 	if err != nil {
 		return err
 	}
 	if identity != plan.Metadata {
 		return errors.New("metadata bundle changed after the plan was created")
+	}
+	metadataPlan, err := metadata.Diff(bundle.Source, bundle.Metadata)
+	if err != nil {
+		return fmt.Errorf("validate shipping metadata changes: %w", err)
+	}
+	if !reflect.DeepEqual(metadataPlan.Changes, plan.MetadataChanges) ||
+		metadataPlan.HasDestructiveChanges() != plan.MetadataDestructive {
+		return errors.New("shipping metadata changes do not match the plan")
 	}
 	return nil
 }
@@ -200,6 +217,9 @@ func validatePlan(plan Plan) error {
 			return errors.New("shipping plan contains an invalid metadata identity")
 		}
 	}
+	if metadataChangesDestructive(plan.MetadataChanges) != plan.MetadataDestructive {
+		return errors.New("shipping plan metadata destructive flag is inconsistent")
+	}
 	if !slices.Equal(plan.Steps, orderedSteps) {
 		return errors.New("shipping plan steps do not match the supported pipeline")
 	}
@@ -211,6 +231,15 @@ func validatePlan(plan Plan) error {
 		return errors.New("shipping plan ID does not match its contents")
 	}
 	return nil
+}
+
+func metadataChangesDestructive(changes []metadata.Change) bool {
+	for _, change := range changes {
+		if change.Destructive {
+			return true
+		}
+	}
+	return false
 }
 
 func planDigest(plan Plan) (string, error) {

@@ -26,7 +26,16 @@ func newPlanResult(plan ship.Plan) PlanResult {
 
 // OutputHeaders implements output.RowSource.
 func (result PlanResult) OutputHeaders() []string {
-	return []string{"PLAN ID", "CONTENT ID", "APP STATUS", "BINARY", "GMS", "STEPS"}
+	return []string{
+		"PLAN ID",
+		"CONTENT ID",
+		"APP STATUS",
+		"BINARY",
+		"GMS",
+		"METADATA CHANGES",
+		"DESTRUCTIVE",
+		"STEPS",
+	}
 }
 
 // OutputRows implements output.RowSource.
@@ -37,6 +46,8 @@ func (result PlanResult) OutputRows() [][]string {
 		result.AppStatus,
 		result.Binary.Path,
 		result.GMS,
+		strconv.Itoa(len(result.MetadataChanges)),
+		strconv.FormatBool(result.MetadataDestructive),
 		joinSteps(result.Steps),
 	}}
 }

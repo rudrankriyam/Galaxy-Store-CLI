@@ -27,6 +27,11 @@ func TestBuildPlanIsDeterministicAndBoundToInputs(t *testing.T) {
 	if first.ID != second.ID {
 		t.Fatalf("plan IDs differ: %q != %q", first.ID, second.ID)
 	}
+	if len(first.MetadataChanges) != 1 ||
+		first.MetadataChanges[0].Path != "/appTitle" ||
+		first.MetadataDestructive {
+		t.Fatalf("metadata plan = %#v", first)
+	}
 	if first.AppStatus != Registration {
 		t.Fatalf("app status = %q", first.AppStatus)
 	}
