@@ -21,6 +21,26 @@ go build -o ./bin/gsc .
 ./bin/gsc --help
 ```
 
+The repository also contains a HEAD-only Homebrew formula for source installs:
+
+```bash
+brew install --HEAD --formula ./Formula/gsc.rb
+gsc version
+```
+
+This does not install or publish a released package. Snapshot workflows build
+ephemeral Linux, macOS, and Windows archives, checksums, and SBOMs for
+validation only.
+
+> [!NOTE]
+> The short command `gsc` is also installed by Gambit Scheme. Homebrew's
+> `gambit-scheme`, `ghostscript`, and `gerbil-scheme` formulae conflict over
+> that executable, so the bundled formula declares those conflicts too. Check
+> `type -a gsc` before installing if you use Scheme tooling. On Windows, use
+> the exact future package identifier `RudrankRiyam.GalaxyStoreCLI` to avoid
+> package-name ambiguity, but still inspect `Get-Command gsc -All` for PATH
+> collisions.
+
 ## Design principles
 
 - JSON on pipes and stable tables in interactive terminals

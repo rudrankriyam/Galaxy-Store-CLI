@@ -1,0 +1,106 @@
+name: Distribution snapshot
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - "LICENSE"
+      - "README.md"
+      - "Formula/gsc.rb"
+      - ".goreleaser.yaml"
+      - ".github/workflows/distribution-snapshot.yml"
+  push:
+    branches: [main]
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - "LICENSE"
+      - "README.md"
+      - "Formula/gsc.rb"
+      - ".goreleaser.yaml"
+      - ".github/workflows/distribution-snapshot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: distribution-snapshot-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  archives:
+    name: Build archives, checksums, and SBOMs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Build non-publishing snapshot
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --snapshot --clean
+
+      - name: Verify artifact inventory and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/checksums.txt
+          test -f dist/artifacts.json
+          test "$(find dist -maxdepth 1 -type f -name 'gsc_*_darwin_*.tar.gz' | wc -l)" -eq 2
+          test "$(find dist -maxdepth 1 -type f -name 'gsc_*_linux_*.tar.gz' | wc -l)" -eq 2
+          test "$(find dist -maxdepth 1 -type f -name 'gsc_*_windows_*.zip' | wc -l)" -eq 2
+          cd dist
+          sha256sum --check checksums.txt
+
+      - name: Upload ephemeral snapshot
+        uses: actions/upload-artifact@v7
+        with:
+          name: gsc-distribution-snapshot-${{ github.sha }}
+          path: dist/
+          retention-days: 7
+
+  homebrew:
+    name: Install and test Homebrew HEAD formula
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate formula style
+        run: brew style Formula/gsc.rb
+
+      - name: Install from the HEAD formula
+        run: brew install --HEAD --formula ./Formula/gsc.rb
+
+      - name: Test the installed command
+        run: |
+          brew test gsc
+          gsc --help
+          gsc version
+
+      - name: Verify workflow cannot publish
+        shell: bash
+        run: |
+          test "${GITHUB_TOKEN:-}" = ""
+          ! grep -Eq 'gh release|git tag|brew tap-new|wingetcreate submit' \
+            .github/workflows/distribution-snapshot.yml
