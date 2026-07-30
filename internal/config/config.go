@@ -74,11 +74,43 @@ func LoadAt(path string) (*Config, error) {
 		return nil, fmt.Errorf("%w: config path is empty", ErrInvalid)
 	}
 
-	data, err := os.ReadFile(path)
+	info, err := os.Lstat(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, ErrNotFound
 		}
+		return nil, fmt.Errorf("inspect config: %w", err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return nil, fmt.Errorf("%w: config file must not be a symbolic link", ErrInvalid)
+	}
+	if !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("%w: config file must be a regular file", ErrInvalid)
+	}
+
+	file, err := os.Open(filepath.Clean(path))
+	if err != nil {
+		return nil, fmt.Errorf("open config: %w", err)
+	}
+	defer file.Close()
+
+	opened, err := file.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("inspect open config: %w", err)
+	}
+	if !opened.Mode().IsRegular() || !os.SameFile(info, opened) {
+		return nil, fmt.Errorf("%w: config file changed while it was being opened", ErrInvalid)
+	}
+	if configFilePermissionsTooPermissive(opened.Mode()) {
+		return nil, fmt.Errorf(
+			"%w: config file permissions %#o are too permissive; restrict access to the current user",
+			ErrInvalid,
+			opened.Mode().Perm(),
+		)
+	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
 	}
 

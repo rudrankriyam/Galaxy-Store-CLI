@@ -94,6 +94,50 @@ func TestLoadAtNotFound(t *testing.T) {
 	}
 }
 
+func TestLoadAtRefusesSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires privileges on some Windows systems")
+	}
+
+	dir := t.TempDir()
+	target := filepath.Join(dir, "target.json")
+	if err := os.WriteFile(target, []byte(`{"profiles":{}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "config.json")
+	if err := os.Symlink(target, path); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := LoadAt(path)
+	if !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "symbolic link") {
+		t.Fatalf("LoadAt() error = %v, want ErrInvalid symlink refusal", err)
+	}
+}
+
+func TestLoadAtRejectsNonRegularFile(t *testing.T) {
+	_, err := LoadAt(t.TempDir())
+	if !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "regular file") {
+		t.Fatalf("LoadAt() error = %v, want ErrInvalid regular-file refusal", err)
+	}
+}
+
+func TestLoadAtRejectsInsecurePermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permission bits are not authoritative on Windows")
+	}
+
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"profiles":{}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := LoadAt(path)
+	if !errors.Is(err, ErrInvalid) || !strings.Contains(err.Error(), "permissions") {
+		t.Fatalf("LoadAt() error = %v, want ErrInvalid permission refusal", err)
+	}
+}
+
 func TestLoadAtRejectsUnknownFields(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.json")
 	contents := `{"profiles":{},"access_token":"must-not-live-here"}`

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"os"
 	"os/signal"
@@ -21,7 +20,7 @@ func run(args []string, version string, stdout io.Writer, stderr io.Writer) int 
 		if errors.Is(err, flag.ErrHelp) {
 			return ExitSuccess
 		}
-		fmt.Fprintf(stderr, "Error: %v\n", err)
+		printError(stderr, err)
 		return ExitUsage
 	}
 
@@ -29,8 +28,9 @@ func run(args []string, version string, stdout io.Writer, stderr io.Writer) int 
 	defer stop()
 
 	if err := root.Run(ctx); err != nil {
-		fmt.Fprintf(stderr, "Error: %v\n", err)
-		return exitCodeForError(err)
+		exitCode := exitCodeForError(err)
+		printError(stderr, err)
+		return exitCode
 	}
 	return ExitSuccess
 }
