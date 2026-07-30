@@ -1,0 +1,4 @@
+interface:
+  display_name: "Galaxy Store Metadata Sync"
+  short_description: "Safely sync Galaxy Store app metadata"
+  default_prompt: "Use $gsc-metadata-sync to pull, review, and safely apply Galaxy Store metadata."
