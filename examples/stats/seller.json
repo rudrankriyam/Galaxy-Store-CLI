@@ -1,0 +1,21 @@
+{
+  "metricIds": [
+    "total_unique_installs_filter",
+    "revenue_total"
+  ],
+  "periods": [
+    {
+      "startDate": "2026-01-01",
+      "endDate": "2026-01-31"
+    }
+  ],
+  "getDailyMetric": true,
+  "getBreakdownsByFilter": false,
+  "noContentMetadata": false,
+  "filters": {
+    "country": [
+      "USA"
+    ]
+  },
+  "trendAggregation": "day"
+}

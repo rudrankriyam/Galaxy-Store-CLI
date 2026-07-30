@@ -1,0 +1,11 @@
+{
+  "id": "example_coins_100",
+  "title": "100 Example Coins",
+  "prices": [
+    {
+      "countryId": "USA",
+      "localPrice": "0.99"
+    }
+  ]
+}
+

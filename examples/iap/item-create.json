@@ -1,0 +1,19 @@
+{
+  "id": "example_coins_100",
+  "title": "100 Example Coins",
+  "description": "Sample consumable item for local validation.",
+  "type": "ITEM",
+  "status": "UNPUBLISHED",
+  "itemPaymentMethod": {
+    "phoneBillStatus": false
+  },
+  "usdPrice": 0.99,
+  "prices": [
+    {
+      "countryId": "USA",
+      "currency": "USD",
+      "localPrice": "0.99"
+    }
+  ]
+}
+

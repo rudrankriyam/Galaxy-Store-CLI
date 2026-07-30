@@ -1,0 +1,9 @@
+{
+  "betaTestersToBeAdded": [
+    "tester-one@example.invalid",
+    "tester-two@example.invalid"
+  ],
+  "betaTestersToBeDeleted": [],
+  "feedbackChannel": "beta-feedback@example.invalid"
+}
+

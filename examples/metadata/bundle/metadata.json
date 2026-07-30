@@ -1,0 +1,22 @@
+{
+  "contentId": "000000000000",
+  "defaultLanguageCode": "ENG",
+  "paid": "N",
+  "publicationType": "03",
+  "appTitle": "Example App",
+  "shortDescription": "A sample metadata bundle.",
+  "longDescription": "Replace this text with the app description reviewed by your team.",
+  "supportEMail": "support@example.invalid",
+  "privatePolicyURLYN": "N",
+  "screenshots": [
+    {
+      "reuseYn": true
+    }
+  ],
+  "sellCountryList": [
+    {
+      "countryCode": "USA"
+    }
+  ]
+}
+

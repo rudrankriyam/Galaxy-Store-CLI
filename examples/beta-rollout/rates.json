@@ -1,0 +1,14 @@
+{
+  "rolloutRate": 20,
+  "countries": [
+    {
+      "countryCode": "USA",
+      "rolloutRate": 10
+    },
+    {
+      "countryCode": "KOR",
+      "rolloutRate": 20
+    }
+  ]
+}
+

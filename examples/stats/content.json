@@ -1,0 +1,17 @@
+{
+  "contentId": "000000000000",
+  "metricIds": [
+    "total_unique_installs_filter",
+    "daily_rat_score"
+  ],
+  "periods": [
+    {
+      "startDate": "2026-01-01",
+      "endDate": "2026-01-31"
+    }
+  ],
+  "noBreakdown": true,
+  "filters": {},
+  "trendAggregation": "week"
+}
+

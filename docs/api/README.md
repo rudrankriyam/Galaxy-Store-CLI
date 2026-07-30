@@ -53,13 +53,13 @@ credential rather than refreshed on every invocation.
 | `content.apps.list` | `GET /seller/contentList` | safe | no | read | `gsc apps list` |
 | `content.apps.view` | `GET /seller/contentInfo` | safe | no | read | `gsc apps view --content-id <content-id>` |
 | `content.apps.update` | `POST /seller/contentUpdate` | never | yes | write | `gsc apps update --content-id <content-id> --file <metadata.json> --confirm` |
-| `content.binary.add` | `POST /seller/v2/content/binary` | never | yes | upload | `gsc binaries add --content-id <content-id> --file <app.aab>` |
-| `content.binary.update` | `PUT /seller/v2/content/binary` | never | yes | upload | `gsc binaries update --content-id <content-id> --binary-seq <sequence> --file <app.aab>` |
+| `content.binary.add` | `POST /seller/v2/content/binary` | never | yes | upload | `gsc binaries add --content-id <content-id> --file-key <uploaded-file-key> --gms Y\|N --confirm` |
+| `content.binary.update` | `PUT /seller/v2/content/binary` | never | yes | upload | `gsc binaries update --content-id <content-id> --binary-seq <sequence> --gms Y\|N --confirm` |
 | `content.binary.delete` | `DELETE /seller/v2/content/binary` | never | yes | destructive | `gsc binaries delete --content-id <content-id> --binary-seq <sequence> --confirm` |
 | `content.apps.submit` | `POST /seller/contentSubmit` | never | yes | submit | `gsc apps submit --content-id <content-id> --confirm` |
 | `content.apps.status.update` | `POST /seller/contentStatusUpdate` | never | yes | publish | `gsc apps status update --content-id <content-id> --status <status> --confirm` |
-| `upload.session.create` | `POST /seller/createUploadSessionId` | conditional | yes | upload | `gsc uploads sessions create` |
-| `upload.file` | `POST /galaxyapi/fileUpload` | conditional | yes | upload | `gsc uploads file --file <path>` |
+| `upload.session.create` | `POST /seller/createUploadSessionId` | conditional | yes | upload | `gsc uploads sessions create --confirm` |
+| `upload.file` | `POST /galaxyapi/fileUpload` | conditional | yes | upload | `gsc uploads file --session-id <session-id> --file <path> --confirm` |
 
 All operations except `upload.file` use the main Developer API host and require
 the `publishing` scope, access token, and `service-account-id` header.
@@ -78,10 +78,11 @@ intent and validate destructive empty collections before sending the request.
 
 | ID | Method and path | Retry | Mutation | Capability | Proposed command |
 | --- | --- | --- | --- | --- | --- |
-| `beta.view` | `GET /seller/v2/content/betaTest` | safe | no | read | `gsc beta testers list --content-id <content-id>` |
+| `beta.view` | `GET /seller/v2/content/betaTest` | safe | no | read | `gsc beta testers list --content-id <content-id> --app-status SALE\|REGISTRATION` |
 | `beta.update` | `PUT /seller/v2/content/betaTest` | never | yes | write | `gsc beta testers update --content-id <content-id> --file <beta.json> --confirm` |
-| `rollout.rate.view` | `GET /seller/v2/content/stagedRolloutRate` | safe | no | read | `gsc rollouts rate view --content-id <content-id>` |
-| `rollout.rate.update` | `PUT /seller/v2/content/stagedRolloutRate` | never | yes | write | `gsc rollouts rate update --content-id <content-id> --file <rates.json> --confirm` |
+| `rollout.rate.view` | `GET /seller/v2/content/stagedRolloutRate` | safe | no | read | `gsc rollouts rate view --content-id <content-id> --app-status SALE\|REGISTRATION` |
+| `rollout.rate.update` | `PUT /seller/v2/content/stagedRolloutRate` | never | yes | write | `gsc rollouts rate update --content-id <content-id> --app-status SALE\|REGISTRATION --file <rates.json> --confirm` |
+| `rollout.rate.complete` | `PUT /seller/v2/content/stagedRolloutRate` | never | yes | publish | `gsc rollouts rate complete --content-id <content-id> --app-status SALE\|REGISTRATION --confirm` |
 | `rollout.binary.list` | `GET /seller/v2/content/stagedRolloutBinary` | safe | no | read | `gsc rollouts binaries list --content-id <content-id> --app-status <status>` |
 | `rollout.binary.update` | `PUT /seller/v2/content/stagedRolloutBinary` | never | yes | write | `gsc rollouts binaries update --content-id <content-id> --file <binaries.json> --confirm` |
 
@@ -94,7 +95,7 @@ Samsung also does not allow an active rollout percentage to decrease.
 | ID | Method and path | Retry | Mutation | Capability | Proposed command |
 | --- | --- | --- | --- | --- | --- |
 | `reviews.list` | `GET /seller/v2/content/comment` | safe | no | read | `gsc reviews list --content-id <content-id>` |
-| `reviews.reply` | `POST /seller/v2/content/comment/reply` | never | yes | write | `gsc reviews reply --content-id <content-id> --comment-id <comment-id> --body <text> --confirm` |
+| `reviews.reply` | `POST /seller/v2/content/comment/reply` | never | yes | write | `gsc reviews reply --content-id <content-id> --comment-id <comment-id> --country-code <code> --body <text> --confirm` |
 | `reviews.reply.delete` | `DELETE /seller/v2/content/comment/reply` | never | yes | destructive | `gsc reviews reply delete --content-id <content-id> --comment-id <comment-id> --confirm` |
 
 ### IAP item catalog
@@ -121,7 +122,7 @@ for sale. They cannot create or edit subscription catalog products.
 | `iap.subscriptions.cancel` | same endpoint, `action=cancel` | never | yes | financial | `gsc iap subscriptions cancel --package-name <package-name> --purchase-id <purchase-id> --confirm` |
 | `iap.subscriptions.refund` | same endpoint, `action=refund` | never | yes | financial | `gsc iap subscriptions refund --package-name <package-name> --purchase-id <purchase-id> --confirm` |
 | `iap.subscriptions.revoke` | same endpoint, `action=revoke` | never | yes | financial | `gsc iap subscriptions revoke --package-name <package-name> --purchase-id <purchase-id> --confirm` |
-| `iap.orders.list` | `POST /iap/seller/orders` | safe | no | financial-read | `gsc iap orders list --date <YYYYMMDD>` |
+| `iap.orders.list` | `POST /iap/seller/orders` | safe | no | financial-read | `gsc iap orders list --seller-seq <seller-sequence> [--request-date <YYYYMMDD>]` |
 | `iap.receipts.verify` | `GET /iap/v6/receipt?purchaseID=…` | safe | no | financial-read | `gsc iap receipts verify --purchase-id <purchase-id>` |
 
 Orders is a read-only POST query. Receipt verification uses
@@ -132,7 +133,7 @@ Orders is a read-only POST query. Receipt verification uses
 | ID | Method and path | Scope | Retry | Mutation | Proposed command |
 | --- | --- | --- | --- | --- | --- |
 | `gss.seller.query` | `POST /gss/query/sellerMetric` | gss | safe | no | `gsc stats seller --file <query.json>` |
-| `gss.content.query` | `POST /gss/query/contentMetric` | gss | safe | no | `gsc stats content --content-id <content-id> --file <query.json>` |
+| `gss.content.query` | `POST /gss/query/contentMetric` | gss | safe | no | `gsc stats content --file <query.json>` |
 
 Both GSS endpoints are read-only POST queries. They require a token that
 contains the `gss` scope.
