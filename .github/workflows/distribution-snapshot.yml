@@ -89,18 +89,25 @@ jobs:
       - name: Validate formula style
         run: brew style Formula/gsc.rb
 
+      - name: Prepare an isolated local tap
+        run: |
+          brew tap-new --no-git rudrankriyam/gsc-snapshot
+          cp Formula/gsc.rb \
+            "$(brew --repository rudrankriyam/gsc-snapshot)/Formula/gsc.rb"
+
       - name: Install from the HEAD formula
-        run: brew install --HEAD --formula ./Formula/gsc.rb
+        run: brew install --HEAD rudrankriyam/gsc-snapshot/gsc
 
       - name: Test the installed command
         run: |
-          brew test gsc
+          brew test rudrankriyam/gsc-snapshot/gsc
           gsc --help
           gsc version
 
       - name: Verify workflow cannot publish
+        if: always()
         shell: bash
         run: |
           test "${GITHUB_TOKEN:-}" = ""
-          ! grep -Eq 'gh release|git tag|brew tap-new|wingetcreate submit' \
+          ! grep -Eq 'gh release|git tag|git push|wingetcreate submit' \
             .github/workflows/distribution-snapshot.yml
