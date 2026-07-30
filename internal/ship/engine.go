@@ -102,8 +102,9 @@ type Result struct {
 	// Checkpoint is available to in-process callers for orchestration, but is
 	// intentionally excluded from JSON because session IDs and file keys are
 	// private resumability state.
-	Checkpoint Checkpoint `json:"-"`
-	Complete   bool       `json:"complete"`
+	Checkpoint         Checkpoint `json:"-"`
+	Complete           bool       `json:"complete"`
+	MutationsPerformed bool       `json:"mutationsPerformed"`
 }
 
 // Run validates local inputs, reconciles durable hints against Samsung, and
@@ -122,6 +123,7 @@ func (engine Engine) Run(ctx context.Context, plan Plan) (Result, error) {
 	if engine.Now != nil {
 		now = engine.Now
 	}
+	mutationsPerformed := false
 
 	bundle, identity, err := inspectMetadata(plan.Metadata.Directory)
 	if err != nil {
@@ -177,6 +179,7 @@ func (engine Engine) Run(ctx context.Context, plan Plan) (Result, error) {
 				"create upload session: remote returned an invalid session",
 			)
 		}
+		mutationsPerformed = true
 		checkpoint.UploadSessionID = session.ID
 		checkpoint.UploadSessionExpiresAt = session.ExpiresAt.UTC().
 			Format(time.RFC3339Nano)
@@ -200,6 +203,7 @@ func (engine Engine) Run(ctx context.Context, plan Plan) (Result, error) {
 				"upload binary: remote returned no file key",
 			)
 		}
+		mutationsPerformed = true
 		checkpoint.FileKey = upload.FileKey
 		checkpoint.complete(StepUploadBinary)
 		if err := engine.Store.Save(checkpoint); err != nil {
@@ -248,6 +252,7 @@ func (engine Engine) Run(ctx context.Context, plan Plan) (Result, error) {
 				err,
 			)
 		}
+		mutationsPerformed = true
 		checkpoint.BinarySequence = sequence
 		checkpoint.PendingStep = ""
 		checkpoint.complete(StepAddBinary)
@@ -315,6 +320,7 @@ func (engine Engine) Run(ctx context.Context, plan Plan) (Result, error) {
 		); err != nil {
 			return Result{Checkpoint: checkpoint}, fmt.Errorf("apply metadata: %w", err)
 		}
+		mutationsPerformed = true
 		checkpoint.PendingStep = ""
 		checkpoint.complete(StepApplyMetadata)
 		if err := engine.Store.Save(checkpoint); err != nil {
@@ -396,6 +402,7 @@ func (engine Engine) Run(ctx context.Context, plan Plan) (Result, error) {
 				err,
 			)
 		}
+		mutationsPerformed = true
 		checkpoint.complete(StepSubmitReview)
 		checkpoint.PendingStep = ""
 		checkpoint.AmbiguousSubmission = false
@@ -404,8 +411,9 @@ func (engine Engine) Run(ctx context.Context, plan Plan) (Result, error) {
 		}
 	}
 	return Result{
-		Checkpoint: checkpoint,
-		Complete:   checkpoint.has(StepSubmitReview),
+		Checkpoint:         checkpoint,
+		Complete:           checkpoint.has(StepSubmitReview),
+		MutationsPerformed: mutationsPerformed,
 	}, nil
 }
 

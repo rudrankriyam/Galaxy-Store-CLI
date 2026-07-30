@@ -25,7 +25,7 @@ func TestEngineRunsTypedPipelineAndResumesAsNoOp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !result.Complete {
+	if !result.Complete || !result.MutationsPerformed {
 		t.Fatalf("result = %#v", result)
 	}
 	if !slices.Equal(result.Checkpoint.CompletedSteps, orderedSteps) {
@@ -45,7 +45,7 @@ func TestEngineRunsTypedPipelineAndResumesAsNoOp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !result.Complete || remote.calls != (remoteCalls{
+	if !result.Complete || result.MutationsPerformed || remote.calls != (remoteCalls{
 		inspect: before.inspect + 1,
 		session: before.session,
 		upload:  before.upload,
