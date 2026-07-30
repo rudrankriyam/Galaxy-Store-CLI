@@ -15,7 +15,7 @@
       "retry": "never",
       "mutation": true,
       "capability": "authenticate",
-      "proposedCommand": "gsc auth login",
+      "proposedCommand": "gsc auth login --profile <name> --service-account-id <service-account-id> --private-key <path> --scope <scope>",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api/create-an-access-token.html",
       "lastVerified": "2026-07-30",
       "notes": "JWT must be RS256 and contain the service account ID and requested publishing and/or gss scopes."
@@ -48,7 +48,7 @@
       "retry": "never",
       "mutation": true,
       "capability": "destructive",
-      "proposedCommand": "gsc auth revoke --confirm",
+      "proposedCommand": "gsc auth revoke --profile <name> --confirm",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api/use-the-access-token.html",
       "lastVerified": "2026-07-30"
     },
@@ -113,7 +113,7 @@
       "retry": "never",
       "mutation": true,
       "capability": "upload",
-      "proposedCommand": "gsc binaries add --content-id <content-id> --file <app.aab>",
+      "proposedCommand": "gsc binaries add --content-id <content-id> --file-key <file-key> --gms <Y|N> --confirm",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api/content-publish-api/add-new-binary.html",
       "lastVerified": "2026-07-30",
       "notes": "Current replacement for the binaryList field deprecated in March 2025 and rejected by contentUpdate starting July 2026."
@@ -130,7 +130,7 @@
       "retry": "never",
       "mutation": true,
       "capability": "upload",
-      "proposedCommand": "gsc binaries update --content-id <content-id> --binary-seq <sequence> --file <app.aab>",
+      "proposedCommand": "gsc binaries update --content-id <content-id> --binary-seq <sequence> --gms <Y|N> --confirm",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api/content-publish-api/modify-binary.html",
       "lastVerified": "2026-07-30"
     },
@@ -195,7 +195,7 @@
       "retry": "safe",
       "mutation": false,
       "capability": "read",
-      "proposedCommand": "gsc beta testers list --content-id <content-id>",
+      "proposedCommand": "gsc beta testers list --content-id <content-id> --app-status <SALE|REGISTRATION>",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api.html",
       "lastVerified": "2026-07-30"
     },
@@ -227,7 +227,7 @@
       "retry": "safe",
       "mutation": false,
       "capability": "read",
-      "proposedCommand": "gsc rollouts rate view --content-id <content-id>",
+      "proposedCommand": "gsc rollouts rate view --content-id <content-id> --app-status <SALE|REGISTRATION>",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api.html",
       "lastVerified": "2026-07-30"
     },
@@ -243,10 +243,27 @@
       "retry": "never",
       "mutation": true,
       "capability": "write",
-      "proposedCommand": "gsc rollouts rate update --content-id <content-id> --file <rates.json> --confirm",
+      "proposedCommand": "gsc rollouts rate update --content-id <content-id> --app-status <SALE|REGISTRATION> --file <rates.json> --confirm",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api.html",
       "lastVerified": "2026-07-30",
       "notes": "Samsung does not allow an active staged rollout rate to be decreased."
+    },
+    {
+      "id": "rollout.rate.complete",
+      "name": "Complete staged rollout",
+      "method": "PUT",
+      "host": "https://devapi.samsungapps.com",
+      "path": "/seller/v2/content/stagedRolloutRate",
+      "family": "rollout",
+      "scope": "publishing",
+      "auth": "access-token+service-account",
+      "retry": "never",
+      "mutation": true,
+      "capability": "publish",
+      "proposedCommand": "gsc rollouts rate complete --content-id <content-id> --app-status <SALE|REGISTRATION> --confirm",
+      "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api.html",
+      "lastVerified": "2026-07-30",
+      "notes": "Samsung calls this DISABLE_ROLLOUT, but it deploys the release to all users globally rather than pausing distribution."
     },
     {
       "id": "rollout.binary.list",
@@ -260,7 +277,7 @@
       "retry": "safe",
       "mutation": false,
       "capability": "read",
-      "proposedCommand": "gsc rollouts binaries list --content-id <content-id> --app-status <status>",
+      "proposedCommand": "gsc rollouts binaries list --content-id <content-id> --app-status <SALE|REGISTRATION>",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api.html",
       "lastVerified": "2026-07-30"
     },
@@ -308,7 +325,7 @@
       "retry": "never",
       "mutation": true,
       "capability": "write",
-      "proposedCommand": "gsc reviews reply --content-id <content-id> --comment-id <comment-id> --body <text> --confirm",
+      "proposedCommand": "gsc reviews reply --content-id <content-id> --comment-id <comment-id> --country-code <code> --body <text> --confirm",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api/content-publish-api/buyer-comment-view.html",
       "lastVerified": "2026-07-30"
     },
@@ -340,7 +357,7 @@
       "retry": "conditional",
       "mutation": true,
       "capability": "upload",
-      "proposedCommand": "gsc uploads sessions create",
+      "proposedCommand": "gsc uploads sessions create --confirm",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api/content-publish-api/create-file-upload-session-id.html",
       "lastVerified": "2026-07-30"
     },
@@ -356,7 +373,7 @@
       "retry": "conditional",
       "mutation": true,
       "capability": "upload",
-      "proposedCommand": "gsc uploads file --file <path>",
+      "proposedCommand": "gsc uploads file --session-id <session-id> --file <path> --confirm",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api/content-publish-api/file-upload.html",
       "lastVerified": "2026-07-30",
       "notes": "This is the only cataloged operation on seller.samsungapps.com; it uses the upload session ID returned by createUploadSessionId."
@@ -571,7 +588,7 @@
       "retry": "safe",
       "mutation": false,
       "capability": "financial-read",
-      "proposedCommand": "gsc iap orders list --date <YYYYMMDD>",
+      "proposedCommand": "gsc iap orders list --seller-seq <seller-seq> --request-date <YYYYMMDD>",
       "sourceUrl": "https://developer.samsung.com/iap/api/iap-orders-api.html",
       "lastVerified": "2026-07-30",
       "notes": "POST is a read-only query for payments and refunds on a specific date."
@@ -622,7 +639,7 @@
       "retry": "safe",
       "mutation": false,
       "capability": "analytics",
-      "proposedCommand": "gsc stats content --content-id <content-id> --file <query.json>",
+      "proposedCommand": "gsc stats content --file <query.json>",
       "sourceUrl": "https://developer.samsung.com/galaxy-store/galaxy-store-developer-api/gss-api.html",
       "lastVerified": "2026-07-30",
       "notes": "POST is a read-only statistics query."

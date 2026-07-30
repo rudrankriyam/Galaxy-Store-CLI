@@ -104,8 +104,8 @@ func TestRunCapabilitiesCommand(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
 		t.Fatalf("decode output: %v; stdout=%q", err, stdout.String())
 	}
-	if result.OperationCount != 38 || result.LimitationCount != 6 {
-		t.Fatalf("capability counts = %d/%d, want 38/6", result.OperationCount, result.LimitationCount)
+	if result.OperationCount != 39 || result.LimitationCount != 6 {
+		t.Fatalf("capability counts = %d/%d, want 39/6", result.OperationCount, result.LimitationCount)
 	}
 }
 

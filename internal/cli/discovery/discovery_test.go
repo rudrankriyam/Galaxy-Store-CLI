@@ -49,8 +49,8 @@ func TestCapabilitiesCommandJSONIsDeterministic(t *testing.T) {
 	if err := json.Unmarshal([]byte(first), &report); err != nil {
 		t.Fatalf("decode capabilities JSON: %v\n%s", err, first)
 	}
-	if report.OperationCount != 38 || len(report.Operations) != 38 {
-		t.Fatalf("operation counts = %d/%d, want 38/38", report.OperationCount, len(report.Operations))
+	if report.OperationCount != 39 || len(report.Operations) != 39 {
+		t.Fatalf("operation counts = %d/%d, want 39/39", report.OperationCount, len(report.Operations))
 	}
 	if report.LimitationCount != 6 || len(report.Limitations) != 6 {
 		t.Fatalf("limitation counts = %d/%d, want 6/6", report.LimitationCount, len(report.Limitations))
@@ -88,8 +88,8 @@ func TestSchemaCommandReportsCuratedMetadataNotOpenAPI(t *testing.T) {
 	if report.Format != "curated-operation-catalog" || report.OpenAPI {
 		t.Fatalf("schema identity = %q openapi=%v, want curated non-OpenAPI catalog", report.Format, report.OpenAPI)
 	}
-	if report.OperationCount != 38 || report.LimitationCount != 6 {
-		t.Fatalf("schema counts = %d/%d, want 38/6", report.OperationCount, report.LimitationCount)
+	if report.OperationCount != 39 || report.LimitationCount != 6 {
+		t.Fatalf("schema counts = %d/%d, want 39/6", report.OperationCount, report.LimitationCount)
 	}
 	if !strings.Contains(report.Provenance, "does not publish an OpenAPI") {
 		t.Fatalf("provenance = %q, want explicit OpenAPI limitation", report.Provenance)
