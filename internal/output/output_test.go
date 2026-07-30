@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"reflect"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestParseFormat(t *testing.T) {
@@ -142,6 +144,133 @@ func TestPrinterExplicitFormats(t *testing.T) {
 	})
 }
 
+func TestHumanReadableOutputNeutralizesTerminalControls(t *testing.T) {
+	t.Parallel()
+
+	table := Table{
+		Headers: []string{
+			"unsafe\x1b]0;title\x07\u202e\tcolumn",
+			"Note",
+		},
+		Rows: [][]string{{
+			"before\x1b[31mred\x1b[0m\u009b2K\u009d0;osc\u009c" +
+				"\u061c\u200e\u200f\u202a\u202b\u202c\u202d\u202e" +
+				"\u2066\u2067\u2068\u2069after\x7f",
+			"first\nsecond\r\nthird\rfour\tfive\u0085six\u2028seven\u2029eight",
+		}},
+	}
+
+	t.Run("table", func(t *testing.T) {
+		t.Parallel()
+
+		var stdout bytes.Buffer
+		if err := NewPrinter(&stdout, nil).Print(FormatTable, table); err != nil {
+			t.Fatalf("Print(table): %v", err)
+		}
+		output := stdout.String()
+		assertInertHumanOutput(t, output)
+		if got, want := strings.Count(output, "\n"), 2; got != want {
+			t.Fatalf("table line count = %d, want %d; output %q", got, want, output)
+		}
+		for _, value := range []string{
+			"unsafe]0;title column",
+			"before[31mred[0m2K0;oscafter",
+			"first second third four five six seven eight",
+		} {
+			if !strings.Contains(output, value) {
+				t.Fatalf("table output = %q, want sanitized value %q", output, value)
+			}
+		}
+	})
+
+	t.Run("markdown", func(t *testing.T) {
+		t.Parallel()
+
+		var stdout bytes.Buffer
+		if err := NewPrinter(&stdout, nil).Print(FormatMarkdown, table); err != nil {
+			t.Fatalf("Print(markdown): %v", err)
+		}
+		output := stdout.String()
+		assertInertHumanOutput(t, output)
+		if got, want := strings.Count(output, "\n"), 3; got != want {
+			t.Fatalf("markdown line count = %d, want %d; output %q", got, want, output)
+		}
+		for _, value := range []string{
+			"unsafe]0;title column",
+			"before[31mred[0m2K0;oscafter",
+			"first<br>second<br>third<br>four five six seven eight",
+		} {
+			if !strings.Contains(output, value) {
+				t.Fatalf("markdown output = %q, want sanitized value %q", output, value)
+			}
+		}
+	})
+}
+
+func TestHumanReadableSanitizationPreservesJSONValues(t *testing.T) {
+	t.Parallel()
+
+	original := Table{
+		Headers: []string{"unsafe\x1b]0;title\x07\u202e"},
+		Rows: [][]string{{
+			"line one\nline two\t\u009b2K\u2066hidden\u2069",
+		}},
+	}
+	var stdout bytes.Buffer
+	if err := NewPrinter(&stdout, nil).Print(FormatJSON, original); err != nil {
+		t.Fatalf("Print(json): %v", err)
+	}
+	expectedBytes, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("marshal expected JSON: %v", err)
+	}
+	expectedBytes = append(expectedBytes, '\n')
+	if !bytes.Equal(stdout.Bytes(), expectedBytes) {
+		t.Fatalf("JSON bytes = %q, want exact existing encoding %q", stdout.Bytes(), expectedBytes)
+	}
+
+	var decoded Table
+	if err := json.Unmarshal(stdout.Bytes(), &decoded); err != nil {
+		t.Fatalf("decode JSON output: %v", err)
+	}
+	if !reflect.DeepEqual(decoded, original) {
+		t.Fatalf("JSON value = %#v, want exact original %#v", decoded, original)
+	}
+}
+
+func TestSanitizeHumanCellCoversControlRangesAndInvalidUTF8(t *testing.T) {
+	t.Parallel()
+
+	var hostile strings.Builder
+	hostile.WriteString("before")
+	for control := rune(0); control <= 0x1f; control++ {
+		hostile.WriteRune(control)
+	}
+	hostile.WriteRune(0x7f)
+	for control := rune(0x80); control <= 0x9f; control++ {
+		hostile.WriteRune(control)
+	}
+	for _, bidi := range []rune{
+		0x061c,
+		0x200e, 0x200f,
+		0x202a, 0x202b, 0x202c, 0x202d, 0x202e,
+		0x2066, 0x2067, 0x2068, 0x2069,
+	} {
+		hostile.WriteRune(bidi)
+	}
+	hostile.WriteString("after")
+	hostile.WriteByte(0xc2)
+	hostile.WriteString("suffix")
+
+	got := sanitizeHumanCell(hostile.String(), " ")
+	assertInertHumanOutput(t, got)
+	for _, value := range []string{"before", "after", "\ufffdsuffix"} {
+		if !strings.Contains(got, value) {
+			t.Fatalf("sanitizeHumanCell output = %q, want %q preserved", got, value)
+		}
+	}
+}
+
 func TestRawJSONValidationAndFormatting(t *testing.T) {
 	t.Parallel()
 
@@ -250,4 +379,34 @@ type errorWriter struct{}
 
 func (errorWriter) Write([]byte) (int, error) {
 	return 0, errors.New("write failed")
+}
+
+func assertInertHumanOutput(t *testing.T, output string) {
+	t.Helper()
+
+	for index := 0; index < len(output); {
+		r, size := utf8.DecodeRuneInString(output[index:])
+		if r == utf8.RuneError && size == 1 {
+			t.Fatalf("human output contains invalid UTF-8 at byte %d: %q", index, output)
+		}
+		if r == '\n' {
+			index += size
+			continue
+		}
+		switch {
+		case r < 0x20, r == 0x7f:
+			t.Fatalf("human output contains C0/DEL control %U: %q", r, output)
+		case r >= 0x80 && r <= 0x9f:
+			t.Fatalf("human output contains C1 control %U: %q", r, output)
+		case r == 0x061c, r == 0x200e, r == 0x200f:
+			t.Fatalf("human output contains bidi mark %U: %q", r, output)
+		case r >= 0x202a && r <= 0x202e:
+			t.Fatalf("human output contains bidi embedding/override %U: %q", r, output)
+		case r >= 0x2066 && r <= 0x2069:
+			t.Fatalf("human output contains bidi isolate %U: %q", r, output)
+		case r == 0x2028, r == 0x2029:
+			t.Fatalf("human output contains Unicode line separator %U: %q", r, output)
+		}
+		index += size
+	}
 }

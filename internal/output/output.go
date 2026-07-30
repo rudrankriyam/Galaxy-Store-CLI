@@ -305,10 +305,7 @@ func writeTabbedRow(destination io.Writer, values []string) error {
 }
 
 func sanitizeTableCell(value string) string {
-	value = strings.ReplaceAll(value, "\t", " ")
-	value = strings.ReplaceAll(value, "\r\n", " ")
-	value = strings.ReplaceAll(value, "\r", " ")
-	return strings.ReplaceAll(value, "\n", " ")
+	return sanitizeHumanCell(value, " ")
 }
 
 func renderMarkdown(destination io.Writer, headers []string, rows [][]string) error {
@@ -353,9 +350,8 @@ func writeMarkdownRow(destination io.Writer, values []string) error {
 }
 
 func escapeMarkdownCell(value string) string {
+	value = sanitizeHumanCell(value, "<br>")
 	value = strings.ReplaceAll(value, "\\", "\\\\")
 	value = strings.ReplaceAll(value, "|", "\\|")
-	value = strings.ReplaceAll(value, "\r\n", "<br>")
-	value = strings.ReplaceAll(value, "\r", "<br>")
-	return strings.ReplaceAll(value, "\n", "<br>")
+	return value
 }
