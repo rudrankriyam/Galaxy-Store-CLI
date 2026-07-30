@@ -1,0 +1,103 @@
+name: WinGet snapshot validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - "scripts/generate_winget_manifests.py"
+      - "scripts/validate_winget_manifests.py"
+      - "scripts/validate-winget.ps1"
+      - "tests/test_winget_manifests.py"
+      - ".github/workflows/winget-snapshot.yml"
+  push:
+    branches: [main]
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - "scripts/generate_winget_manifests.py"
+      - "scripts/validate_winget_manifests.py"
+      - "scripts/validate-winget.ps1"
+      - "tests/test_winget_manifests.py"
+      - ".github/workflows/winget-snapshot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: winget-snapshot-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Build and validate candidate manifests
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      SNAPSHOT_VERSION: 0.0.0-snapshot
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build Windows snapshot
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force build | Out-Null
+          go build -trimpath -o build/gsc.exe .
+
+      - name: Execute snapshot smoke tests
+        shell: pwsh
+        run: |
+          & .\build\gsc.exe --help
+          if ($LASTEXITCODE -ne 0) { throw "gsc --help failed" }
+          & .\build\gsc.exe version
+          if ($LASTEXITCODE -ne 0) { throw "gsc version failed" }
+
+      - name: Test manifest tooling
+        shell: pwsh
+        run: python -m unittest tests/test_winget_manifests.py
+
+      - name: Generate candidate manifests
+        shell: pwsh
+        run: |
+          python scripts/generate_winget_manifests.py `
+            --version $env:SNAPSHOT_VERSION `
+            --installer build/gsc.exe `
+            --installer-url https://example.invalid/snapshots/gsc.exe `
+            --output-dir build/winget
+
+      - name: Validate with repository checks and WinGet
+        shell: pwsh
+        run: |
+          $manifestDirectory = "build/winget/manifests/r/RudrankRiyam/GalaxyStoreCLI/$env:SNAPSHOT_VERSION"
+          ./scripts/validate-winget.ps1 `
+            -ManifestDirectory $manifestDirectory `
+            -InstallerPath build/gsc.exe `
+            -RequireWinget `
+            -CheckWingetCreate
+
+      - name: Verify workflow has no publishing capability
+        shell: pwsh
+        run: |
+          $workflow = Get-Content .github/workflows/winget-snapshot.yml -Raw
+          $forbidden = @(
+            ("wingetcreate " + "submit"),
+            ("gh " + "release"),
+            ("git " + "tag"),
+            ("GITHUB_" + "TOKEN:")
+          )
+          foreach ($needle in $forbidden) {
+            if ($workflow.Contains($needle)) {
+              throw "Publishing operation found in validation workflow: $needle"
+            }
+          }
