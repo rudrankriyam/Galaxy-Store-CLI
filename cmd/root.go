@@ -11,6 +11,7 @@ import (
 	"github.com/peterbourgon/ff/v3/ffcli"
 	"golang.org/x/term"
 
+	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/authcmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/discovery"
 )
 
@@ -43,7 +44,17 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 			return err
 		},
 	}
+	authCommand := unavailableCommand("auth", "Manage Galaxy Store service-account authentication.")
+	if dependencies, err := authcmd.DefaultDependencies(stdout, stderr, isTerminal); err == nil {
+		authCommand = authcmd.NewCommand(dependencies)
+	} else {
+		authCommand.Exec = func(context.Context, []string) error {
+			return fmt.Errorf("initialize authentication: %w", err)
+		}
+	}
+
 	root.Subcommands = []*ffcli.Command{
+		authCommand,
 		discovery.CapabilitiesCommand(stdout, isTerminal),
 		discovery.SchemaCommand(stdout, isTerminal),
 		discovery.SearchCommand(stdout, isTerminal),
@@ -65,6 +76,14 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 	versionCommand.UsageFunc = commandUsage
 
 	return root
+}
+
+func unavailableCommand(name, help string) *ffcli.Command {
+	return &ffcli.Command{
+		Name:       name,
+		ShortUsage: "gsc " + name,
+		ShortHelp:  help,
+	}
 }
 
 func isTerminal(writer io.Writer) bool {
