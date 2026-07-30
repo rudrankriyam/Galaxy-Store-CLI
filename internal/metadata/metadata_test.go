@@ -267,7 +267,7 @@ func TestCanonicalSHA256IgnoresFormattingAndObjectKeyOrder(t *testing.T) {
 func TestNewBundleAndVerifyDrift(t *testing.T) {
 	t.Parallel()
 
-	source := sourceForStatus("SALE", `"future":"preserved"`)
+	source := sourceForSale(`"future":"preserved"`)
 	var record apps.App
 	if err := json.Unmarshal(source, &record); err != nil {
 		t.Fatalf("decode app: %v", err)
@@ -300,7 +300,7 @@ func TestNewBundleAndVerifyDrift(t *testing.T) {
 		t.Fatalf("VerifyDrift reordered source: %v", err)
 	}
 
-	changed := sourceForStatus("SALE", `"future":"changed"`)
+	changed := sourceForSale(`"future":"changed"`)
 	err = VerifyDrift(bundle.Manifest, changed)
 	if !errors.Is(err, ErrDrift) {
 		t.Fatalf("VerifyDrift error = %v, want ErrDrift", err)
@@ -320,10 +320,10 @@ func validEnvelope(extra string) string {
 	return "{" + strings.Join(parts, ",") + "}"
 }
 
-func sourceForStatus(status string, extra string) json.RawMessage {
+func sourceForSale(extra string) json.RawMessage {
 	parts := []string{
 		`"contentId":"000007654321"`,
-		`"appStatus":"` + status + `"`,
+		`"appStatus":"SALE"`,
 		`"contentStatus":"FOR_SALE"`,
 		`"defaultLanguageCode":"ENG"`,
 		`"paid":"N"`,

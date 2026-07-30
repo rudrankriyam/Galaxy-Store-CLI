@@ -15,7 +15,7 @@ import (
 func TestWriteAndReadBundleRoundTrip(t *testing.T) {
 	t.Parallel()
 
-	bundle := mustBundle(t, sourceForStatus("SALE", `"appTitle":"Original"`))
+	bundle := mustBundle(t, sourceForSale(`"appTitle":"Original"`))
 	directory := filepath.Join(t.TempDir(), "metadata")
 	if err := WriteBundle(directory, bundle, WriteOptions{}); err != nil {
 		t.Fatalf("WriteBundle: %v", err)
@@ -58,11 +58,11 @@ func TestWriteBundleRequiresExplicitSafeOverwrite(t *testing.T) {
 	t.Parallel()
 
 	directory := filepath.Join(t.TempDir(), "metadata")
-	first := mustBundle(t, sourceForStatus("SALE", `"appTitle":"First"`))
+	first := mustBundle(t, sourceForSale(`"appTitle":"First"`))
 	if err := WriteBundle(directory, first, WriteOptions{}); err != nil {
 		t.Fatalf("WriteBundle first: %v", err)
 	}
-	second := mustBundle(t, sourceForStatus("SALE", `"appTitle":"Second"`))
+	second := mustBundle(t, sourceForSale(`"appTitle":"Second"`))
 
 	err := WriteBundle(directory, second, WriteOptions{})
 	if !errors.Is(err, ErrOverwrite) {
@@ -108,7 +108,7 @@ func TestBundleFilesystemRejectsSymlinks(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	bundle := mustBundle(t, sourceForStatus("SALE", ""))
+	bundle := mustBundle(t, sourceForSale(""))
 	realDirectory := filepath.Join(root, "real")
 	if err := WriteBundle(realDirectory, bundle, WriteOptions{}); err != nil {
 		t.Fatalf("WriteBundle: %v", err)
@@ -157,11 +157,11 @@ func TestReadBundleDetectsTampering(t *testing.T) {
 	t.Parallel()
 
 	directory := filepath.Join(t.TempDir(), "metadata")
-	bundle := mustBundle(t, sourceForStatus("SALE", `"appTitle":"Original"`))
+	bundle := mustBundle(t, sourceForSale(`"appTitle":"Original"`))
 	if err := WriteBundle(directory, bundle, WriteOptions{}); err != nil {
 		t.Fatalf("WriteBundle: %v", err)
 	}
-	tampered := sourceForStatus("SALE", `"appTitle":"Tampered"`)
+	tampered := sourceForSale(`"appTitle":"Tampered"`)
 	encoded, err := json.MarshalIndent(json.RawMessage(tampered), "", "  ")
 	if err != nil {
 		t.Fatalf("encode tampered source: %v", err)

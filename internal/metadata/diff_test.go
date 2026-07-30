@@ -9,7 +9,7 @@ import (
 func TestDiffTreatsNullAsPreserveAndEmptyAsClear(t *testing.T) {
 	t.Parallel()
 
-	current := sourceForStatus("SALE", `
+	current := sourceForSale(`
 		"addLanguage":[
 			{"languagecode":"DEU","description":"Deutsch","appTitle":"App"}
 		],
@@ -99,7 +99,7 @@ func TestDiffIsSemanticDeterministicAndIgnoresSourceOnlyFields(t *testing.T) {
 func TestDiffClassifiesCollectionRemovalAndScreenshotReplacement(t *testing.T) {
 	t.Parallel()
 
-	current := sourceForStatus("SALE", `
+	current := sourceForSale(`
 		"addLanguage":[
 			{"languagecode":"DEU","description":"Deutsch","appTitle":"App"},
 			{"languagecode":"FRA","description":"Français","appTitle":"App"}
@@ -138,7 +138,7 @@ func TestDiffClassifiesCollectionRemovalAndScreenshotReplacement(t *testing.T) {
 func TestDiffDetectsScreenshotOrder(t *testing.T) {
 	t.Parallel()
 
-	current := sourceForStatus("SALE", `
+	current := sourceForSale(`
 		"screenshots":[
 			{"screenshotPath":"one.png","reuseYn":true},
 			{"screenshotPath":"two.png","reuseYn":true}

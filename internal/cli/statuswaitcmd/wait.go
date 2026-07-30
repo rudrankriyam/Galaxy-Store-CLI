@@ -289,7 +289,7 @@ func run(ctx context.Context, dependencies Dependencies, values options) error {
 			status := strings.TrimSpace(selected.ContentStatus)
 			if !knownContentStatus(status) {
 				return fmt.Errorf(
-					"Samsung returned undocumented contentStatus %q for app %s %s",
+					"samsung returned undocumented contentStatus %q for app %s %s",
 					status,
 					contentID,
 					appStatus,
@@ -437,7 +437,7 @@ func selectVariant(records []apps.App, contentID string, appStatus string) (*app
 		record := &records[index]
 		if record.ContentID != "" && record.ContentID != contentID {
 			return nil, fmt.Errorf(
-				"Samsung returned content ID %q while waiting for %s",
+				"samsung returned content ID %q while waiting for %s",
 				record.ContentID,
 				contentID,
 			)
@@ -447,7 +447,7 @@ func selectVariant(records []apps.App, contentID string, appStatus string) (*app
 		}
 		if selected != nil {
 			return nil, fmt.Errorf(
-				"Samsung returned multiple %s records for content ID %s",
+				"samsung returned multiple %s records for content ID %s",
 				appStatus,
 				contentID,
 			)

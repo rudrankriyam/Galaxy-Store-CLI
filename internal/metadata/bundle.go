@@ -149,7 +149,7 @@ func WriteBundle(
 		restoreErr := os.Rename(backup, directory)
 		if restoreErr != nil {
 			return fmt.Errorf(
-				"install metadata bundle: %w; restore previous bundle: %v",
+				"install metadata bundle: %w; restore previous bundle: %w",
 				err,
 				restoreErr,
 			)
