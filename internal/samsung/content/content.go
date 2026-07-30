@@ -123,7 +123,7 @@ func (service *Service) Update(
 	if err := validateContentID(contentID); err != nil {
 		return nil, err
 	}
-	if err := validateUpdatePayload(contentID, payload); err != nil {
+	if err := ValidateUpdatePayload(contentID, payload); err != nil {
 		return nil, err
 	}
 
@@ -331,7 +331,9 @@ func (service *Service) CreateUploadSession(ctx context.Context) (*UploadSession
 	return &session, nil
 }
 
-func validateUpdatePayload(contentID string, payload json.RawMessage) error {
+// ValidateUpdatePayload validates contentUpdate JSON without making a network
+// request. Command layers should call this before resolving credentials.
+func ValidateUpdatePayload(contentID string, payload json.RawMessage) error {
 	if len(bytes.TrimSpace(payload)) == 0 {
 		return errors.New("content update payload is required")
 	}
