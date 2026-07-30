@@ -48,10 +48,13 @@ class ConsumerActionTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn(
-            "Galaxy-Store-CLI@REPLACE_WITH_FULL_40_CHARACTER_COMMIT_SHA",
+        references = re.findall(
+            r"rudrankriyam/Galaxy-Store-CLI@([^\s]+)",
             documentation,
         )
+        self.assertTrue(references)
+        for reference in references:
+            self.assertRegex(reference, FULL_SHA)
         self.assertNotIn("Galaxy-Store-CLI@main", documentation)
         self.assertNotIn("Galaxy-Store-CLI@v", documentation)
         self.assertIn("does not download a release", documentation)
