@@ -19,6 +19,13 @@ MANIFEST_VERSION = "1.12.0"
 SUPPORTED_ARCHITECTURES = ("x64", "arm64")
 
 
+def schema_header(manifest_type: str) -> str:
+    return (
+        "# yaml-language-server: $schema="
+        f"https://aka.ms/winget-manifest.{manifest_type}.{MANIFEST_VERSION}.schema.json"
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -133,7 +140,8 @@ def generate(
 
     write_manifest(
         version_file,
-        f"""# Generated locally; this file is not a submission.
+        f"""{schema_header("version")}
+# Generated locally; this file is not a submission.
 PackageIdentifier: {PACKAGE_IDENTIFIER}
 PackageVersion: {version}
 DefaultLocale: en-US
@@ -143,7 +151,8 @@ ManifestVersion: {MANIFEST_VERSION}
     )
     write_manifest(
         locale_file,
-        f"""# Generated locally; this file is not a submission.
+        f"""{schema_header("defaultLocale")}
+# Generated locally; this file is not a submission.
 PackageIdentifier: {PACKAGE_IDENTIFIER}
 PackageVersion: {version}
 PackageLocale: en-US
@@ -167,14 +176,14 @@ ManifestVersion: {MANIFEST_VERSION}
     )
     write_manifest(
         installer_file,
-        f"""# Generated locally; this file is not a submission.
+        f"""{schema_header("installer")}
+# Generated locally; this file is not a submission.
 PackageIdentifier: {PACKAGE_IDENTIFIER}
 PackageVersion: {version}
 InstallerLocale: en-US
 Platform:
   - Windows.Desktop
 InstallerType: portable
-Scope: user
 UpgradeBehavior: install
 Commands:
   - {PACKAGE_COMMAND}

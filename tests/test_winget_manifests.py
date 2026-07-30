@@ -57,7 +57,15 @@ class WingetManifestTests(unittest.TestCase):
         installer_text = generated[2].read_text(encoding="utf-8")
         self.assertIn("PackageIdentifier: RudrankRiyam.GalaxyStoreCLI", installer_text)
         self.assertIn("InstallerType: portable", installer_text)
+        self.assertNotIn("\nScope:", installer_text)
         self.assertIn("Commands:\n  - gsc", installer_text)
+        for path, manifest_type in zip(
+            generated, ("version", "defaultLocale", "installer"), strict=True
+        ):
+            self.assertEqual(
+                path.read_text(encoding="utf-8").splitlines()[0],
+                generator.schema_header(manifest_type),
+            )
         self.assertIn(
             f"InstallerSha256: {generator.sha256_file(self.installer)}",
             installer_text,

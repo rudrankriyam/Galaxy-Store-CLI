@@ -12,6 +12,7 @@ from generate_winget_manifests import (
     MANIFEST_VERSION,
     PACKAGE_COMMAND,
     PACKAGE_IDENTIFIER,
+    schema_header,
     sha256_file,
 )
 
@@ -78,6 +79,8 @@ def validate(manifest_dir: Path, installer: Path | None = None) -> list[Path]:
     }
     versions: set[str] = set()
     for kind, text in texts.items():
+        if text.splitlines()[0] != schema_header(kind):
+            raise ValueError(f"{kind} manifest has the wrong schema header")
         if scalar(text, "PackageIdentifier") != PACKAGE_IDENTIFIER:
             raise ValueError(f"{kind} manifest has the wrong PackageIdentifier")
         versions.add(scalar(text, "PackageVersion"))
