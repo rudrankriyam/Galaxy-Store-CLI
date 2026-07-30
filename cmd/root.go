@@ -6,8 +6,12 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/peterbourgon/ff/v3/ffcli"
+	"golang.org/x/term"
+
+	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/discovery"
 )
 
 var errUsage = errors.New("invalid command usage")
@@ -39,7 +43,12 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 			return err
 		},
 	}
-	root.Subcommands = []*ffcli.Command{versionCommand}
+	root.Subcommands = []*ffcli.Command{
+		discovery.CapabilitiesCommand(stdout, isTerminal),
+		discovery.SchemaCommand(stdout, isTerminal),
+		discovery.SearchCommand(stdout, isTerminal),
+		versionCommand,
+	}
 
 	root.Exec = func(_ context.Context, args []string) error {
 		if versionRequested {
@@ -56,6 +65,11 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 	versionCommand.UsageFunc = commandUsage
 
 	return root
+}
+
+func isTerminal(writer io.Writer) bool {
+	file, ok := writer.(*os.File)
+	return ok && term.IsTerminal(int(file.Fd()))
 }
 
 func rootUsage(command *ffcli.Command) string {
