@@ -1,0 +1,103 @@
+name: Consumer action smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - "action.yml"
+      - ".github/actions/setup-gsc/**"
+      - ".github/workflows/action-smoke.yml"
+      - "docs/GITHUB_ACTION.md"
+      - "tests/test_action.py"
+  push:
+    branches: [main]
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - "action.yml"
+      - ".github/actions/setup-gsc/**"
+      - ".github/workflows/action-smoke.yml"
+      - "docs/GITHUB_ACTION.md"
+      - "tests/test_action.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consumer-action-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Build and run via action (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            runner: ubuntu-latest
+          - name: macOS
+            runner: macos-latest
+          - name: Windows
+            runner: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Validate action policy
+        if: runner.os == 'Linux'
+        shell: bash
+        run: python3 -m unittest tests/test_action.py
+
+      - name: Set up gsc from this checkout
+        id: setup
+        uses: ./
+
+      - name: Verify executable and action outputs
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          GSC_EXECUTABLE: ${{ steps.setup.outputs.path }}
+          GSC_VERSION: ${{ steps.setup.outputs.version }}
+        run: |
+          set -euo pipefail
+          test -n "$GSC_EXECUTABLE"
+          test -f "$GSC_EXECUTABLE"
+          test -n "$GSC_VERSION"
+          command -v gsc
+          test "$(gsc version)" = "$GSC_VERSION"
+
+      - name: Verify executable and action outputs on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          GSC_EXECUTABLE: ${{ steps.setup.outputs.path }}
+          GSC_VERSION: ${{ steps.setup.outputs.version }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:GSC_EXECUTABLE)) {
+            throw "The action returned an empty executable path."
+          }
+          if (-not (Test-Path -LiteralPath $env:GSC_EXECUTABLE -PathType Leaf)) {
+            throw "The action executable does not exist."
+          }
+          if ([string]::IsNullOrWhiteSpace($env:GSC_VERSION)) {
+            throw "The action returned an empty version."
+          }
+          if ((& gsc version) -ne $env:GSC_VERSION) {
+            throw "The PATH executable version does not match the action output."
+          }
+
+      - name: Exercise safe catalog commands
+        shell: bash
+        run: |
+          set -euo pipefail
+          gsc version
+          gsc capabilities --output json >/dev/null
+          gsc schema --output json >/dev/null

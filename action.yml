@@ -1,0 +1,42 @@
+name: Set up Galaxy Store CLI
+description: Build gsc from this action's reviewed source commit and add it to PATH.
+author: Rudrank Riyam
+
+branding:
+  icon: package
+  color: blue
+
+outputs:
+  path:
+    description: Absolute path to the source-built gsc executable.
+    value: ${{ steps.build_posix.outputs.path || steps.build_windows.outputs.path }}
+  version:
+    description: Version text reported by the source-built gsc executable.
+    value: ${{ steps.build_posix.outputs.version || steps.build_windows.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up the repository's supported Go toolchain
+      uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache: false
+
+    - name: Build gsc from action source
+      id: build_posix
+      if: runner.os != 'Windows'
+      shell: bash
+      env:
+        GSC_ACTION_PATH: ${{ github.action_path }}
+        GSC_ACTION_REF: ${{ github.action_ref }}
+      run: '"$GSC_ACTION_PATH/.github/actions/setup-gsc/build.sh"'
+
+    - name: Build gsc from action source
+      id: build_windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        GSC_ACTION_PATH: ${{ github.action_path }}
+        GSC_ACTION_REF: ${{ github.action_ref }}
+      run: '& "$env:GSC_ACTION_PATH/.github/actions/setup-gsc/build.ps1"'
