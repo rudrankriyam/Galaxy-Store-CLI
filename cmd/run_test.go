@@ -169,6 +169,7 @@ func TestRootCommandRegistersCompleteCommandTree(t *testing.T) {
 	want := []string{
 		"auth",
 		"apps",
+		"metadata",
 		"binaries",
 		"uploads",
 		"beta",
@@ -198,6 +199,7 @@ func TestRootCommandRegistersCompleteCommandTree(t *testing.T) {
 	}
 
 	assertSubcommands(t, findSubcommand(t, root, "auth"), "login", "status", "revoke")
+	assertSubcommands(t, findSubcommand(t, root, "metadata"), "pull", "validate", "diff", "apply")
 	assertSubcommands(t, findSubcommand(t, apps, "status"), "update", "wait")
 	assertSubcommands(t, findSubcommand(t, root, "binaries"), "add", "update", "delete")
 	uploads := findSubcommand(t, root, "uploads")

@@ -21,6 +21,7 @@ import (
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/doctorcmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/iapcmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/iapitemscmd"
+	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/metadatacmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/receiptscmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/reviewscmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/rolloutscmd"
@@ -138,6 +139,20 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 		statusCommand.Subcommands[len(statusCommand.Subcommands)-1].Exec = initializationError("status wait command", err)
 	}
 
+	metadataCommand := unavailableCommand(
+		"metadata",
+		"Pull, validate, diff, and safely apply Galaxy Store metadata.",
+	)
+	if dependencies, err := metadatacmd.DefaultDependencies(
+		stdout,
+		stderr,
+		isTerminal,
+	); err == nil {
+		metadataCommand = metadatacmd.NewCommand(dependencies)
+	} else {
+		metadataCommand.Exec = initializationError("metadata commands", err)
+	}
+
 	betaCommand := unavailableCommand("beta", "Manage Galaxy Store closed beta testers.")
 	if dependencies, err := betacmd.DefaultDependencies(stdout, stderr, isTerminal); err == nil {
 		betaCommand = betacmd.NewCommand(dependencies)
@@ -241,6 +256,7 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 	root.Subcommands = append([]*ffcli.Command{
 		authCommand,
 		appsCommand,
+		metadataCommand,
 		binariesCommand,
 		uploadsCommand,
 		betaCommand,

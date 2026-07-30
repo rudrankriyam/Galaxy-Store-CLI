@@ -20,6 +20,7 @@ gsc <command> [flags]
 | --- | --- |
 | `gsc auth` | Manage Galaxy Store service-account authentication. |
 | `gsc apps` | View, update, and submit apps registered in Galaxy Store Seller Portal. |
+| `gsc metadata` | Pull, validate, diff, and safely apply Galaxy Store metadata. |
 | `gsc binaries` | Manage app binaries through Samsung's current v2 API. |
 | `gsc uploads` | Create upload sessions and stream files to Samsung. |
 | `gsc beta` | Manage Galaxy Store closed beta testers. |
@@ -297,6 +298,105 @@ gsc apps status wait --content-id ID --app-status SALE|REGISTRATION --until STAT
 | `--profile string` | `` | Credential profile (defaults to environment or configured profile) |
 | `--timeout duration` | `30m0s` | Maximum wait from 1s through 24h |
 | `--until string` | `` | Required comma-separated Samsung contentStatus values |
+
+## `gsc metadata`
+
+Pull, validate, diff, and safely apply Galaxy Store metadata.
+
+### Usage
+
+```text
+gsc metadata <command> [flags]
+```
+
+### Commands
+
+| Command | Description |
+| --- | --- |
+| `gsc metadata pull` | Pull one exact contentInfo record into a safe three-file bundle. |
+| `gsc metadata validate` | Validate a metadata bundle entirely offline. |
+| `gsc metadata diff` | Compare desired metadata with one exact live contentInfo record. |
+| `gsc metadata apply` | Apply a drift-checked metadata bundle and verify the readback. |
+
+## `gsc metadata pull`
+
+Pull one exact contentInfo record into a safe three-file bundle.
+
+### Usage
+
+```text
+gsc metadata pull --content-id ID --app-status SALE|REGISTRATION [flags]
+```
+
+### Flags
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--app-status string` | `` | Required exact variant: SALE or REGISTRATION |
+| `--content-id string` | `` | Required 12-digit Galaxy Store content ID |
+| `--dir string` | `metadata` | Metadata bundle directory |
+| `--force` | `false` | Replace an existing complete three-file metadata bundle |
+| `--output string` | `auto` | Output format: auto, json, table, or markdown |
+| `--profile string` | `` | Credential profile |
+
+## `gsc metadata validate`
+
+Validate a metadata bundle entirely offline.
+
+### Usage
+
+```text
+gsc metadata validate [--dir PATH] [--output FORMAT]
+```
+
+### Flags
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--dir string` | `metadata` | Metadata bundle directory |
+| `--output string` | `auto` | Output format: auto, json, table, or markdown |
+
+## `gsc metadata diff`
+
+Compare desired metadata with one exact live contentInfo record.
+
+### Usage
+
+```text
+gsc metadata diff --content-id ID --app-status SALE|REGISTRATION [flags]
+```
+
+### Flags
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--app-status string` | `` | Required exact variant: SALE or REGISTRATION |
+| `--content-id string` | `` | Required 12-digit Galaxy Store content ID |
+| `--dir string` | `metadata` | Metadata bundle directory |
+| `--output string` | `auto` | Output format: auto, json, table, or markdown |
+| `--profile string` | `` | Credential profile |
+
+## `gsc metadata apply`
+
+Apply a drift-checked metadata bundle and verify the readback.
+
+### Usage
+
+```text
+gsc metadata apply --content-id ID --app-status SALE|REGISTRATION [--dry-run | --confirm] [flags]
+```
+
+### Flags
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--app-status string` | `` | Required exact variant: SALE or REGISTRATION |
+| `--confirm` | `false` | Confirm the planned contentUpdate mutation |
+| `--content-id string` | `` | Required 12-digit Galaxy Store content ID |
+| `--dir string` | `metadata` | Metadata bundle directory |
+| `--dry-run` | `false` | Fetch live metadata and print the semantic plan without updating it |
+| `--output string` | `auto` | Output format: auto, json, table, or markdown |
+| `--profile string` | `` | Credential profile |
 
 ## `gsc binaries`
 
