@@ -1,0 +1,12 @@
+/bin/
+/dist/
+/coverage.out
+/.idea/
+/.vscode/
+.DS_Store
+
+# Never commit Galaxy Store credentials.
+*.pem
+*.key
+.env
+.gsc/
