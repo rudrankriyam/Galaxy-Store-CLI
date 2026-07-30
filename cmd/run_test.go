@@ -198,7 +198,7 @@ func TestRootCommandRegistersCompleteCommandTree(t *testing.T) {
 	}
 
 	assertSubcommands(t, findSubcommand(t, root, "auth"), "login", "status", "revoke")
-	assertSubcommands(t, findSubcommand(t, apps, "status"), "update")
+	assertSubcommands(t, findSubcommand(t, apps, "status"), "update", "wait")
 	assertSubcommands(t, findSubcommand(t, root, "binaries"), "add", "update", "delete")
 	uploads := findSubcommand(t, root, "uploads")
 	assertSubcommands(t, uploads, "sessions", "file")

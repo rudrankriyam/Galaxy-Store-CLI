@@ -26,6 +26,7 @@ import (
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/rolloutscmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/shared"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/statscmd"
+	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/statuswaitcmd"
 )
 
 var errUsage = errors.New("invalid command usage")
@@ -103,6 +104,39 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 	} else {
 		binariesCommand.Exec = initializationError("binary commands", err)
 		uploadsCommand.Exec = initializationError("upload commands", err)
+	}
+	if dependencies, err := statuswaitcmd.DefaultDependencies(
+		stdout,
+		stderr,
+		isTerminal,
+	); err == nil {
+		waitCommand := statuswaitcmd.NewCommand(dependencies)
+		statusCommand := namedSubcommand(appsCommand, "status")
+		if statusCommand == nil {
+			statusCommand = &ffcli.Command{
+				Name:        "status",
+				ShortUsage:  "gsc apps status <command> [flags]",
+				ShortHelp:   "Inspect or change app lifecycle status.",
+				Subcommands: []*ffcli.Command{waitCommand},
+				Exec: func(context.Context, []string) error {
+					return shared.UsageErrorf("apps status requires a command: wait")
+				},
+			}
+			appsCommand.Subcommands = append(appsCommand.Subcommands, statusCommand)
+		} else {
+			statusCommand.ShortHelp = "Wait for or change app lifecycle status."
+			statusCommand.Subcommands = append(statusCommand.Subcommands, waitCommand)
+			statusCommand.Exec = func(context.Context, []string) error {
+				return shared.UsageErrorf("apps status requires a command: update or wait")
+			}
+		}
+	} else if statusCommand := namedSubcommand(appsCommand, "status"); statusCommand != nil {
+		statusCommand.Subcommands = append(
+			statusCommand.Subcommands,
+			unavailableCommand("wait", "Wait for an app to reach a content status."),
+		)
+		statusCommand.Subcommands[len(statusCommand.Subcommands)-1].Exec =
+			initializationError("status wait command", err)
 	}
 
 	betaCommand := unavailableCommand("beta", "Manage Galaxy Store closed beta testers.")
@@ -249,6 +283,18 @@ func unavailableCommand(name, help string) *ffcli.Command {
 		ShortUsage: "gsc " + name,
 		ShortHelp:  help,
 	}
+}
+
+func namedSubcommand(command *ffcli.Command, name string) *ffcli.Command {
+	if command == nil {
+		return nil
+	}
+	for _, subcommand := range command.Subcommands {
+		if subcommand.Name == name {
+			return subcommand
+		}
+	}
+	return nil
 }
 
 func isTerminal(writer io.Writer) bool {

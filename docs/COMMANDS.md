@@ -134,7 +134,7 @@ gsc apps <command> [flags]
 | `gsc apps view` | View every SALE and REGISTRATION record for one app. |
 | `gsc apps update` | Update Galaxy Store metadata while preserving JSON tri-state semantics. |
 | `gsc apps submit` | Submit a REGISTERING app for Galaxy Store review. |
-| `gsc apps status` | Change app distribution status. |
+| `gsc apps status` | Wait for or change app lifecycle status. |
 
 ## `gsc apps list`
 
@@ -232,7 +232,7 @@ gsc apps submit --content-id ID [--dry-run | --confirm] [flags]
 
 ## `gsc apps status`
 
-Change app distribution status.
+Wait for or change app lifecycle status.
 
 ### Usage
 
@@ -245,6 +245,7 @@ gsc apps status <command> [flags]
 | Command | Description |
 | --- | --- |
 | `gsc apps status update` | Distribute, suspend, or terminate an app. |
+| `gsc apps status wait` | Wait for one exact Galaxy Store app variant to reach a content status. |
 
 ## `gsc apps status update`
 
@@ -266,6 +267,36 @@ gsc apps status update --content-id ID --status STATUS [--dry-run | --confirm] [
 | `--output string` | `auto` | Output format: auto, json, table, or markdown |
 | `--profile string` | `` | Credential profile (defaults to environment or configured profile) |
 | `--status string` | `` | Required target: FOR_SALE, SUSPENDED, or TERMINATED |
+
+## `gsc apps status wait`
+
+Wait for one exact Galaxy Store app variant to reach a content status.
+
+The first status read happens immediately. SALE and REGISTRATION are never
+inferred because both records can exist simultaneously. Progress is written to
+stderr; stdout receives one final structured result.
+
+Examples:
+  gsc apps status wait --content-id 000007654321 --app-status REGISTRATION --until READY_FOR_SALE
+  gsc apps status wait --content-id 000007654321 --app-status SALE --until FOR_SALE,SUSPENDED --interval 10s --timeout 20m
+
+### Usage
+
+```text
+gsc apps status wait --content-id ID --app-status SALE|REGISTRATION --until STATUS[,STATUS] [flags]
+```
+
+### Flags
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--app-status string` | `` | Required app variant: SALE or REGISTRATION |
+| `--content-id string` | `` | Required 12-digit Galaxy Store content ID |
+| `--interval duration` | `15s` | Polling interval from 1s through 5m |
+| `--output string` | `auto` | Output format: auto, json, table, or markdown |
+| `--profile string` | `` | Credential profile (defaults to environment or configured profile) |
+| `--timeout duration` | `30m0s` | Maximum wait from 1s through 24h |
+| `--until string` | `` | Required comma-separated Samsung contentStatus values |
 
 ## `gsc binaries`
 
