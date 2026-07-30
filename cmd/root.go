@@ -135,8 +135,7 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 			statusCommand.Subcommands,
 			unavailableCommand("wait", "Wait for an app to reach a content status."),
 		)
-		statusCommand.Subcommands[len(statusCommand.Subcommands)-1].Exec =
-			initializationError("status wait command", err)
+		statusCommand.Subcommands[len(statusCommand.Subcommands)-1].Exec = initializationError("status wait command", err)
 	}
 
 	betaCommand := unavailableCommand("beta", "Manage Galaxy Store closed beta testers.")
