@@ -65,8 +65,10 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 		}
 	}
 	appsCommand := unavailableCommand("apps", "View apps registered in Galaxy Store Seller Portal.")
+	appReadsAvailable := false
 	if dependencies, err := appscmd.DefaultDependencies(stdout, stderr, isTerminal); err == nil {
 		appsCommand = appscmd.NewCommand(dependencies)
+		appReadsAvailable = true
 	} else {
 		appsCommand.Exec = func(context.Context, []string) error {
 			return fmt.Errorf("initialize app commands: %w", err)
@@ -82,11 +84,18 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 			appsCommand.Subcommands,
 			contentcmd.NewAppsSubcommands(dependencies)...,
 		)
-		appsCommand.ShortHelp = "View, update, and submit apps registered in Galaxy Store Seller Portal."
-		appsCommand.Exec = func(context.Context, []string) error {
-			return shared.UsageErrorf(
-				"apps requires a command: list, view, update, submit, or status",
-			)
+		if appReadsAvailable {
+			appsCommand.ShortHelp = "View, update, and submit apps registered in Galaxy Store Seller Portal."
+			appsCommand.Exec = func(context.Context, []string) error {
+				return shared.UsageErrorf(
+					"apps requires a command: list, view, update, submit, or status",
+				)
+			}
+		} else {
+			appsCommand.ShortHelp = "Update and submit apps registered in Galaxy Store Seller Portal."
+			appsCommand.Exec = func(context.Context, []string) error {
+				return shared.UsageErrorf("apps requires a command: update, submit, or status")
+			}
 		}
 		binariesCommand = contentcmd.NewBinariesCommand(dependencies)
 		uploadsCommand = contentcmd.NewUploadsCommand(dependencies)
@@ -126,6 +135,9 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 		"iap",
 		"Manage Galaxy Store in-app products, transactions, subscriptions, and receipts.",
 	)
+	receiptsCommand := receiptscmd.NewCommand(
+		receiptscmd.DefaultDependencies(stdout, stderr, isTerminal),
+	)
 	if dependencies, err := iapcmd.DefaultDependencies(stdout, stderr, isTerminal); err == nil {
 		iapCommand = iapcmd.NewCommand(dependencies)
 		if itemDependencies, itemErr := iapitemscmd.DefaultDependencies(
@@ -139,13 +151,11 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 			)
 		} else {
 			itemsCommand := unavailableCommand("items", "Manage one-time Samsung IAP items.")
+			itemsCommand.ShortUsage = "gsc iap items"
 			itemsCommand.Exec = initializationError("IAP item commands", itemErr)
 			iapCommand.Subcommands = append([]*ffcli.Command{itemsCommand}, iapCommand.Subcommands...)
 		}
-		iapCommand.Subcommands = append(
-			iapCommand.Subcommands,
-			receiptscmd.NewCommand(receiptscmd.DefaultDependencies(stdout, stderr, isTerminal)),
-		)
+		iapCommand.Subcommands = append(iapCommand.Subcommands, receiptsCommand)
 		iapCommand.ShortHelp = "Manage Galaxy Store in-app products, transactions, subscriptions, and receipts."
 		iapCommand.Exec = func(context.Context, []string) error {
 			return shared.UsageErrorf(
@@ -153,7 +163,13 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 			)
 		}
 	} else {
-		iapCommand.Exec = initializationError("IAP commands", err)
+		iapCommand.Subcommands = []*ffcli.Command{receiptsCommand}
+		iapCommand.Exec = func(context.Context, []string) error {
+			return shared.UsageErrorf(
+				"iap requires the receipts command; initialize authenticated IAP commands: %v",
+				err,
+			)
+		}
 	}
 
 	statsCommand := unavailableCommand("stats", "Query Galaxy Store seller and app statistics.")
@@ -188,7 +204,7 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 		doctorCommand.Exec = initializationError("diagnostic command", err)
 	}
 
-	root.Subcommands = []*ffcli.Command{
+	root.Subcommands = append([]*ffcli.Command{
 		authCommand,
 		appsCommand,
 		binariesCommand,
@@ -200,11 +216,8 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 		statsCommand,
 		apiCommand,
 		doctorCommand,
-		discovery.CapabilitiesCommand(stdout, isTerminal),
-		discovery.SchemaCommand(stdout, isTerminal),
-		discovery.SearchCommand(stdout, isTerminal),
-		versionCommand,
-	}
+	}, discovery.Commands(stdout, isTerminal)...)
+	root.Subcommands = append(root.Subcommands, versionCommand)
 
 	root.Exec = func(_ context.Context, args []string) error {
 		if versionRequested {

@@ -178,8 +178,8 @@ func TestRootCommandRegistersCompleteCommandTree(t *testing.T) {
 		"api",
 		"doctor",
 		"capabilities",
-		"schema",
 		"search",
+		"schema",
 		"version",
 	}
 	if !slices.Equal(got, want) {
@@ -194,6 +194,36 @@ func TestRootCommandRegistersCompleteCommandTree(t *testing.T) {
 	iap := findSubcommand(t, root, "iap")
 	if got, want := subcommandNames(iap), []string{"items", "purchases", "subscriptions", "orders", "receipts"}; !slices.Equal(got, want) {
 		t.Fatalf("iap commands = %v, want %v", got, want)
+	}
+
+	assertSubcommands(t, findSubcommand(t, root, "auth"), "login", "status", "revoke")
+	assertSubcommands(t, findSubcommand(t, apps, "status"), "update")
+	assertSubcommands(t, findSubcommand(t, root, "binaries"), "add", "update", "delete")
+	uploads := findSubcommand(t, root, "uploads")
+	assertSubcommands(t, uploads, "sessions", "file")
+	assertSubcommands(t, findSubcommand(t, uploads, "sessions"), "create")
+	beta := findSubcommand(t, root, "beta")
+	assertSubcommands(t, beta, "testers")
+	assertSubcommands(t, findSubcommand(t, beta, "testers"), "list", "update")
+	rollouts := findSubcommand(t, root, "rollouts")
+	assertSubcommands(t, rollouts, "rate", "binaries")
+	assertSubcommands(t, findSubcommand(t, rollouts, "rate"), "view", "update", "complete")
+	assertSubcommands(t, findSubcommand(t, rollouts, "binaries"), "list", "update")
+	reviews := findSubcommand(t, root, "reviews")
+	assertSubcommands(t, reviews, "list", "reply")
+	assertSubcommands(t, findSubcommand(t, reviews, "reply"), "delete")
+	assertSubcommands(t, findSubcommand(t, iap, "items"), "list", "view", "create", "replace", "update", "delete")
+	assertSubcommands(t, findSubcommand(t, iap, "purchases"), "consume", "acknowledge")
+	assertSubcommands(t, findSubcommand(t, iap, "subscriptions"), "status", "cancel", "refund", "revoke")
+	assertSubcommands(t, findSubcommand(t, iap, "orders"), "list")
+	assertSubcommands(t, findSubcommand(t, iap, "receipts"), "verify")
+	assertSubcommands(t, findSubcommand(t, root, "stats"), "seller", "content")
+	assertSubcommands(t, findSubcommand(t, root, "api"), "request")
+
+	for _, forbidden := range []string{"items", "receipts"} {
+		if slices.Contains(got, forbidden) {
+			t.Fatalf("unexpected top-level %q command in %v", forbidden, got)
+		}
 	}
 }
 
@@ -258,4 +288,11 @@ func subcommandNames(command *ffcli.Command) []string {
 		names = append(names, subcommand.Name)
 	}
 	return names
+}
+
+func assertSubcommands(t *testing.T, command *ffcli.Command, want ...string) {
+	t.Helper()
+	if got := subcommandNames(command); !slices.Equal(got, want) {
+		t.Fatalf("%s commands = %v, want %v", command.Name, got, want)
+	}
 }
