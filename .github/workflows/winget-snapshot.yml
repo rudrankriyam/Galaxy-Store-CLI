@@ -87,6 +87,7 @@ jobs:
             -CheckWingetCreate
 
       - name: Verify workflow has no publishing capability
+        if: always()
         shell: pwsh
         run: |
           $workflow = Get-Content .github/workflows/winget-snapshot.yml -Raw

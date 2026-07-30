@@ -330,7 +330,7 @@ func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 	}
 	info, err := os.Stat(path)
 	if err != nil {
-		return nil, fmt.Errorf("%w: stat key: %v", ErrInvalidPrivateKey, err)
+		return nil, fmt.Errorf("%w: stat key: %w", ErrInvalidPrivateKey, err)
 	}
 	if info.IsDir() {
 		return nil, fmt.Errorf("%w: path is a directory", ErrInvalidPrivateKey)
@@ -341,7 +341,7 @@ func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("%w: read key: %v", ErrInvalidPrivateKey, err)
+		return nil, fmt.Errorf("%w: read key: %w", ErrInvalidPrivateKey, err)
 	}
 	return ParsePrivateKey(data)
 }

@@ -86,7 +86,7 @@ func LoadAt(path string) (*Config, error) {
 	decoder := json.NewDecoder(strings.NewReader(string(data)))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&cfg); err != nil {
-		return nil, fmt.Errorf("%w: decode config: %v", ErrInvalid, err)
+		return nil, fmt.Errorf("%w: decode config: %w", ErrInvalid, err)
 	}
 	var extra json.RawMessage
 	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {

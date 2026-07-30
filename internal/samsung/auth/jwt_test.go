@@ -81,10 +81,10 @@ func TestSignJWTCreatesRequiredSamsungClaims(t *testing.T) {
 		t.Fatalf("scopes = %#v", claims.Scopes)
 	}
 	wantIssuedAt := now.Truncate(time.Second)
-	if !claims.IssuedAt.Time.Equal(wantIssuedAt) {
+	if !claims.IssuedAt.Equal(wantIssuedAt) {
 		t.Fatalf("iat = %v, want %v", claims.IssuedAt.Time, wantIssuedAt)
 	}
-	if want := wantIssuedAt.Add(15 * time.Minute); !claims.ExpiresAt.Time.Equal(want) {
+	if want := wantIssuedAt.Add(15 * time.Minute); !claims.ExpiresAt.Equal(want) {
 		t.Fatalf("exp = %v, want %v", claims.ExpiresAt.Time, want)
 	}
 	if parsed.Method.Alg() != "RS256" {

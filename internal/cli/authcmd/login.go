@@ -163,13 +163,12 @@ func runLogin(ctx context.Context, dependencies Dependencies, options loginOptio
 	if err != nil {
 		return safeError(err, signedJWT)
 	}
-	signedJWT = ""
 	if response == nil || !response.OK {
-		return errors.New("Samsung returned an invalid access-token response")
+		return errors.New("samsung returned an invalid access-token response")
 	}
 	accessToken := strings.TrimSpace(response.CreatedItem.AccessToken)
 	if accessToken == "" {
-		return errors.New("Samsung returned an empty access token")
+		return errors.New("samsung returned an empty access token")
 	}
 
 	if err := store.Set(profile, accessToken); err != nil {

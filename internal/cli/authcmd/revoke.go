@@ -106,7 +106,7 @@ func runRevoke(ctx context.Context, dependencies Dependencies, options revokeOpt
 		return safeOperationError("revoke access token", err, resolved.AccessToken)
 	}
 	if response == nil || !response.OK {
-		return errors.New("Samsung returned an invalid token revocation response")
+		return errors.New("samsung returned an invalid token revocation response")
 	}
 	if err := store.Delete(profile); err != nil {
 		return safeOperationError("delete revoked token from OS credential manager", err, resolved.AccessToken)
