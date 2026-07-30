@@ -37,7 +37,7 @@ type Service struct {
 // New creates an app service.
 func New(client JSONClient) (*Service, error) {
 	if client == nil {
-		return nil, errors.New("Galaxy Store client is required")
+		return nil, errors.New("client is required")
 	}
 	return &Service{client: client}, nil
 }

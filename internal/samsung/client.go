@@ -305,7 +305,7 @@ func (client *Client) authorize(ctx context.Context, request *http.Request) erro
 	}
 	token = strings.TrimSpace(token)
 	if token == "" {
-		return errors.New("Galaxy Store access token is empty")
+		return errors.New("access token is empty")
 	}
 	request.Header.Set("Authorization", "Bearer "+token)
 	request.Header.Set(ServiceAccountIDHeader, client.serviceAccountID)
@@ -328,18 +328,18 @@ func (client *Client) backoff(attempt int) time.Duration {
 
 func developerAPIURL(endpoint string) (*url.URL, error) {
 	if !strings.HasPrefix(endpoint, "/") || strings.HasPrefix(endpoint, "//") {
-		return nil, errors.New("Galaxy Store endpoint must be an absolute path")
+		return nil, errors.New("endpoint must be an absolute path")
 	}
 	reference, err := url.Parse(endpoint)
 	if err != nil {
-		return nil, errors.New("Galaxy Store endpoint is invalid")
+		return nil, errors.New("endpoint is invalid")
 	}
 	if reference.IsAbs() || reference.Host != "" || reference.User != nil || reference.Fragment != "" {
-		return nil, errors.New("Galaxy Store endpoint must not contain a host, user, or fragment")
+		return nil, errors.New("endpoint must not contain a host, user, or fragment")
 	}
 	target := developerAPIBase.ResolveReference(reference)
 	if !allowedURL(target) {
-		return nil, errors.New("Galaxy Store endpoint is not allowed")
+		return nil, errors.New("endpoint is not allowed")
 	}
 	return target, nil
 }
