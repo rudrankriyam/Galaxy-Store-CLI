@@ -41,6 +41,19 @@ checksum:
   name_template: checksums.txt
   algorithm: sha256
 
+# Snapshot validation intentionally leaves this disabled because CI receives no
+# signing secrets. The manual draft workflow requires both secrets, allowing
+# GoReleaser to sign macOS binaries before they are archived.
+notarize:
+  macos:
+    - enabled: >-
+        {{ and (isEnvSet "MACOS_SIGN_P12") (isEnvSet "MACOS_SIGN_PASSWORD") }}
+      ids:
+        - gsc
+      sign:
+        certificate: "{{ .Env.MACOS_SIGN_P12 }}"
+        password: "{{ .Env.MACOS_SIGN_PASSWORD }}"
+
 sboms:
   - id: archives
     artifacts: archive
@@ -63,4 +76,3 @@ changelog:
 
 release:
   draft: true
-  replace_existing_draft: true

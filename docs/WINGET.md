@@ -64,6 +64,11 @@ The example URL is deliberately non-publishing. It is sufficient for structural
 validation but must be replaced by an immutable public HTTPS URL for the exact
 hashed binary before any future package submission.
 
+Candidate manifests deliberately use WinGet schema `1.10.0`. That is the schema
+supported by the WinGet client currently present on GitHub's `windows-latest`
+runner, and all fields used here are available in it. Upgrade this pin only
+alongside an explicit, pinned WinGet client update in CI.
+
 Run the repository validator:
 
 ```bash
@@ -78,8 +83,7 @@ On Windows, run Microsoft WinGet validation as well:
 ./scripts/validate-winget.ps1 `
   -ManifestDirectory build/winget/manifests/r/RudrankRiyam/GalaxyStoreCLI/0.0.0-snapshot `
   -InstallerPath build/gsc.exe `
-  -RequireWinget `
-  -CheckWingetCreate
+  -RequireWinget
 ```
 
 `winget validate` is the Microsoft schema validator. WinGetCreate can author or
@@ -91,6 +95,12 @@ The `WinGet snapshot validation` GitHub Actions workflow performs the complete
 Windows build, executable smoke test, manifest tests, generation, checksum
 verification, and WinGet schema validation. Its token has read-only repository
 access, and it contains no submission or release operation.
+
+The manual `WinGet installed-package smoke` workflow is intentionally dormant
+until the package identifier is accepted into the WinGet community source. Once
+that happens, an operator can use it to verify exact-ID discovery, installation,
+command resolution, execution, and uninstall on a clean hosted runner. Running
+that workflow does not submit or update a package.
 
 ## Future publishing boundary
 

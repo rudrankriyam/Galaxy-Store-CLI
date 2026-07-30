@@ -12,6 +12,7 @@ from generate_winget_manifests import (
     MANIFEST_VERSION,
     PACKAGE_COMMAND,
     PACKAGE_IDENTIFIER,
+    SUPPORTED_ARCHITECTURES,
     schema_header,
     sha256_file,
 )
@@ -55,6 +56,19 @@ def sequence(text: str, key: str) -> list[str]:
                 break
             return values
     raise ValueError(f"missing {key} sequence")
+
+
+def installer_architecture(text: str) -> str:
+    matches = re.findall(
+        r"(?m)^[ \t]*-\s+Architecture:\s*(\S+)\s*$",
+        text,
+    )
+    if len(matches) != 1:
+        raise ValueError(
+            "expected exactly one installer Architecture field, "
+            f"found {len(matches)}"
+        )
+    return matches[0].strip("\"'")
 
 
 def validate(manifest_dir: Path, installer: Path | None = None) -> list[Path]:
@@ -101,6 +115,12 @@ def validate(manifest_dir: Path, installer: Path | None = None) -> list[Path]:
     installer_text = texts["installer"]
     if scalar(installer_text, "InstallerType") != "portable":
         raise ValueError("InstallerType must be portable")
+    architecture = installer_architecture(installer_text)
+    if architecture not in SUPPORTED_ARCHITECTURES:
+        raise ValueError(
+            "Architecture must be one of "
+            + ", ".join(SUPPORTED_ARCHITECTURES)
+        )
     if sequence(installer_text, "Commands") != [PACKAGE_COMMAND]:
         raise ValueError(f"Commands must contain only {PACKAGE_COMMAND}")
 

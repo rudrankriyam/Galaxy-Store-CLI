@@ -65,9 +65,37 @@ jobs:
           set -euo pipefail
           test -f dist/checksums.txt
           test -f dist/artifacts.json
+          test -f dist/metadata.json
           test "$(find dist -maxdepth 1 -type f -name 'gsc_*_darwin_*.tar.gz' | wc -l)" -eq 2
           test "$(find dist -maxdepth 1 -type f -name 'gsc_*_linux_*.tar.gz' | wc -l)" -eq 2
           test "$(find dist -maxdepth 1 -type f -name 'gsc_*_windows_*.zip' | wc -l)" -eq 2
+          test "$(jq '[.[] | select(.type == "SBOM")] | length' dist/artifacts.json)" -eq 6
+          jq -e '
+            ([.[] | select(.type == "Archive") | [.goos, .goarch]] | sort)
+            ==
+            ([
+              ["darwin", "amd64"],
+              ["darwin", "arm64"],
+              ["linux", "amd64"],
+              ["linux", "arm64"],
+              ["windows", "amd64"],
+              ["windows", "arm64"]
+            ] | sort)
+          ' dist/artifacts.json >/dev/null
+
+          snapshot_version="$(jq -r '.version' dist/metadata.json)"
+          test -n "$snapshot_version"
+          test "$snapshot_version" != "null"
+
+          for archive in dist/gsc_*_darwin_*.tar.gz dist/gsc_*_linux_*.tar.gz; do
+            test "$(tar -tzf "$archive" | sort | tr '\n' ' ')" = "LICENSE README.md gsc "
+            [[ "$(basename "$archive")" == *"_${snapshot_version}_"* ]]
+          done
+          for archive in dist/gsc_*_windows_*.zip; do
+            test "$(unzip -Z1 "$archive" | sort | tr '\n' ' ')" = "LICENSE README.md gsc.exe "
+            [[ "$(basename "$archive")" == *"_${snapshot_version}_"* ]]
+          done
+
           cd dist
           sha256sum --check checksums.txt
 
@@ -109,5 +137,15 @@ jobs:
         shell: bash
         run: |
           test "${GITHUB_TOKEN:-}" = ""
-          ! grep -Eq 'gh release|git tag|git push|wingetcreate submit' \
-            .github/workflows/distribution-snapshot.yml
+          forbidden=(
+            "gh rel""ease"
+            "git t""ag"
+            "git p""ush"
+            "wingetcreate sub""mit"
+          )
+          for needle in "${forbidden[@]}"; do
+            if grep -Fq "${needle}" .github/workflows/distribution-snapshot.yml; then
+              echo "::error::Publishing operation found: ${needle}"
+              exit 1
+            fi
+          done

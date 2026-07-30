@@ -80,11 +80,11 @@ jobs:
         shell: pwsh
         run: |
           $manifestDirectory = "build/winget/manifests/r/RudrankRiyam/GalaxyStoreCLI/$env:SNAPSHOT_VERSION"
+          winget --info
           ./scripts/validate-winget.ps1 `
             -ManifestDirectory $manifestDirectory `
             -InstallerPath build/gsc.exe `
-            -RequireWinget `
-            -CheckWingetCreate
+            -RequireWinget
 
       - name: Verify workflow has no publishing capability
         if: always()

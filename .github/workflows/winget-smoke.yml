@@ -1,0 +1,99 @@
+name: WinGet installed-package smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_id:
+        description: Accepted WinGet package identifier
+        required: true
+        default: RudrankRiyam.GalaxyStoreCLI
+      command:
+        description: Installed command to resolve and execute
+        required: true
+        default: gsc
+
+permissions: {}
+
+jobs:
+  smoke:
+    name: Install, execute, and uninstall accepted package
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      WINGET_PACKAGE_ID: ${{ inputs.package_id }}
+      WINGET_COMMAND: ${{ inputs.command }}
+    steps:
+      - name: Validate inputs
+        shell: pwsh
+        run: |
+          if ($env:WINGET_PACKAGE_ID -notmatch '^[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]$') {
+            throw "Invalid package_id: $env:WINGET_PACKAGE_ID"
+          }
+          if ($env:WINGET_COMMAND -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
+            throw "Invalid command: $env:WINGET_COMMAND"
+          }
+
+      - name: Verify WinGet source and package discovery
+        shell: pwsh
+        run: |
+          winget --info
+          winget source update --disable-interactivity
+          winget search `
+            --id $env:WINGET_PACKAGE_ID `
+            --exact `
+            --source winget `
+            --disable-interactivity
+          winget show `
+            --id $env:WINGET_PACKAGE_ID `
+            --exact `
+            --source winget `
+            --disable-interactivity
+
+      - name: Install by exact package identifier
+        shell: pwsh
+        run: |
+          winget install `
+            --id $env:WINGET_PACKAGE_ID `
+            --exact `
+            --source winget `
+            --disable-interactivity `
+            --accept-source-agreements `
+            --accept-package-agreements
+          if ($LASTEXITCODE -ne 0) {
+            throw "WinGet installation failed."
+          }
+          "GSC_WINGET_INSTALLED=true" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Encoding utf8 `
+            -Append
+
+      - name: Verify installed package and command resolution
+        shell: pwsh
+        run: |
+          winget list `
+            --id $env:WINGET_PACKAGE_ID `
+            --exact `
+            --source winget `
+            --disable-interactivity
+          $env:Path = (
+            [Environment]::GetEnvironmentVariable("Path", "Machine")
+            + ";"
+            + [Environment]::GetEnvironmentVariable("Path", "User")
+          )
+          $resolved = Get-Command $env:WINGET_COMMAND -All -ErrorAction Stop
+          $resolved | Format-List Name, Source, CommandType
+          & $resolved[0].Source --help
+          if ($LASTEXITCODE -ne 0) { throw "Installed command help failed." }
+          & $resolved[0].Source version
+          if ($LASTEXITCODE -ne 0) { throw "Installed command version failed." }
+
+      - name: Uninstall package
+        if: ${{ always() && env.GSC_WINGET_INSTALLED == 'true' }}
+        shell: pwsh
+        run: |
+          winget uninstall `
+            --id $env:WINGET_PACKAGE_ID `
+            --exact `
+            --source winget `
+            --disable-interactivity `
+            --accept-source-agreements

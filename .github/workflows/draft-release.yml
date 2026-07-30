@@ -1,0 +1,91 @@
+name: Draft release from existing tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing SemVer tag to package; this workflow never creates tags
+        required: true
+      confirmation:
+        description: Type CREATE_DRAFT_RELEASE to authorize the draft
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: draft-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    name: Build signed artifacts and create draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      MACOS_SIGN_P12: ${{ secrets.APPLE_DEVELOPER_ID_CERT }}
+      MACOS_SIGN_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_PASSWORD }}
+    steps:
+      - name: Validate explicit release authorization
+        shell: bash
+        env:
+          RELEASE_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "$RELEASE_CONFIRMATION" = "CREATE_DRAFT_RELEASE"
+          [[ "$RELEASE_TAG" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+)*$ ]]
+
+      - name: Checkout the existing tag
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag }}
+
+      - name: Verify tag, checkout, secrets, and release absence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}"
+          test "$(git rev-parse HEAD)" = "$(git rev-list -n 1 "$RELEASE_TAG")"
+          test -n "$MACOS_SIGN_P12"
+          test -n "$MACOS_SIGN_PASSWORD"
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::A GitHub release already exists for $RELEASE_TAG"
+            exit 1
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run release guardrails
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Build signed artifacts and create a draft release
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MACOS_SIGN_P12: ${{ env.MACOS_SIGN_P12 }}
+          MACOS_SIGN_PASSWORD: ${{ env.MACOS_SIGN_PASSWORD }}
+
+      - name: Verify release remains a draft
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = "true"

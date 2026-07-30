@@ -37,18 +37,19 @@ class WingetManifestTests(unittest.TestCase):
         self.installer = self.root / "gsc.exe"
         self.installer.write_bytes(b"candidate Windows snapshot\n")
 
-    def generate(self) -> list[Path]:
+    def generate(self, architecture: str = "x64") -> list[Path]:
         return generator.generate(
             version="0.0.0-snapshot",
             installer=self.installer,
             installer_url="https://example.invalid/snapshots/gsc.exe",
-            architecture="x64",
+            architecture=architecture,
             output_dir=self.root / "winget",
         )
 
     def test_generates_three_valid_portable_manifests(self) -> None:
         generated = self.generate()
         self.assertEqual(len(generated), 3)
+        self.assertEqual(generator.MANIFEST_VERSION, "1.10.0")
         manifest_dir = generated[0].parent
 
         validated = validator.validate(manifest_dir, self.installer)
@@ -70,6 +71,25 @@ class WingetManifestTests(unittest.TestCase):
             f"InstallerSha256: {generator.sha256_file(self.installer)}",
             installer_text,
         )
+
+    def test_generates_and_validates_each_supported_architecture(self) -> None:
+        for architecture in generator.SUPPORTED_ARCHITECTURES:
+            with self.subTest(architecture=architecture):
+                output_dir = self.root / architecture
+                generated = generator.generate(
+                    version="0.0.0-snapshot",
+                    installer=self.installer,
+                    installer_url=(
+                        "https://example.invalid/snapshots/"
+                        f"{architecture}/gsc.exe"
+                    ),
+                    architecture=architecture,
+                    output_dir=output_dir,
+                )
+
+                validator.validate(generated[0].parent, self.installer)
+                installer_text = generated[2].read_text(encoding="utf-8")
+                self.assertIn(f"Architecture: {architecture}", installer_text)
 
     def test_rejects_an_installer_with_the_wrong_command_name(self) -> None:
         wrong_installer = self.root / "galaxy-store.exe"

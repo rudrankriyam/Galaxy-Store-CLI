@@ -15,7 +15,10 @@ PACKAGE_PUBLISHER = "Rudrank Riyam"
 PACKAGE_NAME = "Galaxy Store CLI"
 PACKAGE_COMMAND = "gsc"
 REPOSITORY_URL = "https://github.com/rudrankriyam/Galaxy-Store-CLI"
-MANIFEST_VERSION = "1.12.0"
+# windows-latest currently ships a WinGet client whose schema validator accepts
+# the 1.10 schema headers. Keep candidate generation pinned to that validator
+# until the workflow explicitly installs and pins a newer client.
+MANIFEST_VERSION = "1.10.0"
 SUPPORTED_ARCHITECTURES = ("x64", "arm64")
 
 
