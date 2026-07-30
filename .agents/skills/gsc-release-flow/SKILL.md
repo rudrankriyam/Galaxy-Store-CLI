@@ -24,7 +24,50 @@ gsc apps view \
 Read the returned app variants carefully. Samsung may expose both `SALE` and
 `REGISTRATION`; never merge or silently choose between them.
 
-## Upload the binary
+## Plan and run the typed pipeline
+
+Prepare a canonical three-file metadata bundle with `$gsc-metadata-sync`.
+Then build the deterministic plan entirely offline:
+
+```bash
+gsc ship plan \
+  --content-id 000007654321 \
+  --binary app-release.aab \
+  --metadata-dir metadata \
+  --gms Y \
+  --output json
+```
+
+Preview the complete run without opening credentials, creating a checkpoint,
+or changing local or remote state:
+
+```bash
+gsc ship run \
+  --content-id 000007654321 \
+  --binary app-release.aab \
+  --metadata-dir metadata \
+  --gms Y \
+  --profile production \
+  --output json \
+  --dry-run
+```
+
+Review the exact target, hashes, ordered steps, metadata diff, and destructive
+changes. Only after the user explicitly authorizes this exact plan, repeat the
+same command with `--confirm` instead of `--dry-run`.
+
+`ship run` is fixed to the `REGISTRATION` variant. It uploads and registers one
+binary, applies metadata with drift and readback checks, then submits for
+review. It stores private resumability state under
+`.gsc/ship-000007654321.json` by default, reconciles that checkpoint before
+continuing, and never changes distribution to `FOR_SALE`.
+
+## Manual primitive fallback
+
+Use the following lower-level commands only when diagnosing a step or when the
+user has separately authorized an individual operation.
+
+### Upload the binary
 
 Samsung upload sessions are valid for 24 hours. Preview and create a session:
 
@@ -62,7 +105,7 @@ gsc uploads file \
 Capture the returned file key. Do not parse human-readable table output in
 automation.
 
-## Register the uploaded binary
+### Register the uploaded binary
 
 Register the file with Samsung's v2 binary API:
 
@@ -98,7 +141,11 @@ authorization because deletion is permanent.
 Never put `binaryList` in an app metadata update. Binary operations belong to
 the v2 `gsc binaries` commands.
 
-## Update metadata
+### Update metadata
+
+Prefer `$gsc-metadata-sync` and its canonical three-file bundle. The raw
+`apps update` command below remains an escape hatch for an individually
+reviewed `contentUpdate` payload.
 
 Build the JSON file from the current app state. Every update file must preserve
 the current `contentId`, `defaultLanguageCode`, `paid`, and `publicationType`,
@@ -139,7 +186,7 @@ gsc apps update \
 Updating a live app prepares a parallel `REGISTRATION` record; it does not
 replace the current `SALE` record immediately.
 
-## Verify and submit for review
+### Verify and submit for review
 
 Read the app again and verify the registering record, metadata, and binary:
 
@@ -171,18 +218,22 @@ successful submission as approval or live distribution.
 
 ## Monitor and distribute
 
-Poll with bounded intervals:
+Wait for the exact pending variant with a bounded timeout:
 
 ```bash
-gsc apps view \
+gsc apps status wait \
   --content-id 000007654321 \
+  --app-status REGISTRATION \
+  --until READY_FOR_SALE \
+  --interval 15s \
+  --timeout 30m \
   --profile production \
   --output json
 ```
 
-Inspect Samsung's returned status instead of inferring it from command success.
-When the app is approved and the user explicitly authorizes publication, move
-it to sale:
+Use `gsc apps view` afterward when the full record is needed. Inspect Samsung's
+returned status instead of inferring it from command success. When the app is
+approved and the user explicitly authorizes publication, move it to sale:
 
 ```bash
 gsc apps status update \
