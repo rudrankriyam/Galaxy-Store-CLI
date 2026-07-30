@@ -336,7 +336,7 @@ func TestApplyRejectsSourceDriftBeforeMutation(t *testing.T) {
 
 	original := appSource("SALE", "Original", `null`)
 	bundle := bundleFor(t, original)
-	bundle.Metadata = desiredMetadata("Changed")
+	bundle.Metadata = changedMetadata()
 	service := &fakeService{
 		viewResults: [][]apps.App{{rawApp(
 			t,
@@ -392,7 +392,7 @@ func TestApplyDryRunPlansAfterReadWithoutMutation(t *testing.T) {
 
 	source := appSource("SALE", "Original", `null`)
 	bundle := bundleFor(t, source)
-	bundle.Metadata = desiredMetadata("Changed")
+	bundle.Metadata = changedMetadata()
 	service := &fakeService{viewResults: [][]apps.App{{rawApp(t, source)}}}
 	var stdout bytes.Buffer
 	dependencies := basicDependencies(&stdout, service, bundle)
@@ -426,7 +426,7 @@ func TestApplyRequiresConfirmationAfterPlanning(t *testing.T) {
 
 	source := appSource("SALE", "Original", `null`)
 	bundle := bundleFor(t, source)
-	bundle.Metadata = desiredMetadata("Changed")
+	bundle.Metadata = changedMetadata()
 	service := &fakeService{viewResults: [][]apps.App{{rawApp(t, source)}}}
 	dependencies := basicDependencies(io.Discard, service, bundle)
 
@@ -454,7 +454,7 @@ func TestApplyPerformsOneUpdateAndVerifiesReadback(t *testing.T) {
 	source := appSource("SALE", "Original", `null`)
 	changed := appSource("SALE", "Changed", `null`)
 	bundle := bundleFor(t, source)
-	bundle.Metadata = desiredMetadata("Changed")
+	bundle.Metadata = changedMetadata()
 	service := &fakeService{
 		viewResults: [][]apps.App{
 			{rawApp(t, source)},
@@ -506,7 +506,7 @@ func TestApplyFailsWhenReadbackDoesNotMatch(t *testing.T) {
 
 	source := appSource("SALE", "Original", `null`)
 	bundle := bundleFor(t, source)
-	bundle.Metadata = desiredMetadata("Changed")
+	bundle.Metadata = changedMetadata()
 	service := &fakeService{
 		viewResults: [][]apps.App{
 			{rawApp(t, source)},
@@ -586,13 +586,13 @@ func appSource(
 	}`)
 }
 
-func desiredMetadata(title string) json.RawMessage {
+func changedMetadata() json.RawMessage {
 	return json.RawMessage(`{
 		"contentId":"` + testContentID + `",
 		"defaultLanguageCode":"ENG",
 		"paid":"N",
 		"publicationType":"01",
-		"appTitle":` + quoted(title) + `,
+		"appTitle":"Changed",
 		"screenshots":null
 	}`)
 }
