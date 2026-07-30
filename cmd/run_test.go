@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -223,6 +224,83 @@ func TestRootCommandRegistersCompleteCommandTree(t *testing.T) {
 	for _, forbidden := range []string{"items", "receipts"} {
 		if slices.Contains(got, forbidden) {
 			t.Fatalf("unexpected top-level %q command in %v", forbidden, got)
+		}
+	}
+}
+
+func TestEveryCommandGroupHelpListsImmediateSubcommands(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	root := RootCommand("dev-test", &stdout, &stderr)
+
+	testCases := []struct {
+		path    string
+		command *ffcli.Command
+	}{
+		{path: "gsc", command: root},
+		{path: "gsc apps", command: findSubcommand(t, root, "apps")},
+		{
+			path: "gsc uploads sessions",
+			command: findSubcommand(
+				t,
+				findSubcommand(t, root, "uploads"),
+				"sessions",
+			),
+		},
+		{
+			path: "gsc iap subscriptions",
+			command: findSubcommand(
+				t,
+				findSubcommand(t, root, "iap"),
+				"subscriptions",
+			),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.path, func(t *testing.T) {
+			usage := testCase.command.UsageFunc(testCase.command)
+			if !strings.Contains(
+				usage,
+				"Usage:\n  "+testCase.path+" <command> [flags]",
+			) {
+				t.Fatalf("usage = %q, want canonical group usage for %q", usage, testCase.path)
+			}
+			for _, subcommand := range testCase.command.Subcommands {
+				want := fmt.Sprintf("  %-14s %s", subcommand.Name, subcommand.ShortHelp)
+				if !strings.Contains(usage, want) {
+					t.Errorf("usage = %q, want immediate command row %q", usage, want)
+				}
+			}
+			wantHint := fmt.Sprintf(
+				"Run %q for command help.",
+				testCase.path+" <command> --help",
+			)
+			if !strings.Contains(usage, wantHint) {
+				t.Errorf("usage = %q, want hint %q", usage, wantHint)
+			}
+		})
+	}
+}
+
+func TestLeafCommandHelpIncludesLongHelpAndFlags(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	root := RootCommand("dev-test", &stdout, &stderr)
+	apps := findSubcommand(t, root, "apps")
+	list := findSubcommand(t, apps, "list")
+
+	usage := list.UsageFunc(list)
+	for _, want := range []string{
+		"Samsung returns the complete contentList array",
+		"Examples:",
+		"Flags:",
+		"--limit int",
+		"--output string",
+		`(default "auto")`,
+	} {
+		if !strings.Contains(usage, want) {
+			t.Errorf("usage = %q, want %q", usage, want)
 		}
 	}
 }

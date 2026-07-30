@@ -26,6 +26,14 @@ test:
 test-race:
 	$(GO) test -race ./...
 
+.PHONY: docs
+docs:
+	$(GO) run ./scripts/generate-command-docs
+
+.PHONY: docs-check
+docs-check:
+	$(GO) run ./scripts/generate-command-docs --check
+
 .PHONY: vet
 vet:
 	$(GO) vet ./...
@@ -67,7 +75,7 @@ tools:
 	$(GO) install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 
 .PHONY: check
-check: format-check vet lint test test-race
+check: format-check docs-check vet lint test test-race
 
 .PHONY: clean
 clean:
@@ -80,6 +88,8 @@ help:
 	@echo "  build         Build $(BUILD_DIR)/$(BINARY_NAME)"
 	@echo "  test          Run all tests"
 	@echo "  test-race     Run all tests with the race detector"
+	@echo "  docs          Generate the command reference"
+	@echo "  docs-check    Check that the command reference is current"
 	@echo "  vet           Run go vet"
 	@echo "  format        Format Go source"
 	@echo "  format-check  Check Go formatting without changing files"

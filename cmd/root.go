@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/peterbourgon/ff/v3/ffcli"
 	"golang.org/x/term"
@@ -219,6 +220,8 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 	}, discovery.Commands(stdout, isTerminal)...)
 	root.Subcommands = append(root.Subcommands, versionCommand)
 
+	configureUsage(root, root.Name)
+
 	root.Exec = func(_ context.Context, args []string) error {
 		if versionRequested {
 			_, err := fmt.Fprintln(stdout, version)
@@ -227,11 +230,9 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 		if len(args) > 0 {
 			return fmt.Errorf("%w: unknown command %q", errUsage, args[0])
 		}
-		_, err := fmt.Fprint(stdout, rootUsage(root))
+		_, err := fmt.Fprint(stdout, commandUsage(root))
 		return err
 	}
-	root.UsageFunc = rootUsage
-	versionCommand.UsageFunc = commandUsage
 
 	return root
 }
@@ -255,14 +256,69 @@ func isTerminal(writer io.Writer) bool {
 	return ok && term.IsTerminal(int(file.Fd()))
 }
 
-func rootUsage(command *ffcli.Command) string {
-	usage := fmt.Sprintf("Usage:\n  %s\n\n%s\n\nCommands:\n", command.ShortUsage, command.ShortHelp)
-	for _, subcommand := range command.Subcommands {
-		usage += fmt.Sprintf("  %-14s %s\n", subcommand.Name, subcommand.ShortHelp)
+func configureUsage(command *ffcli.Command, path string) {
+	command.UsageFunc = func(current *ffcli.Command) string {
+		return commandUsageForPath(current, path)
 	}
-	return usage + "\nRun \"gsc <command> --help\" for command help.\n"
+	for _, subcommand := range command.Subcommands {
+		configureUsage(subcommand, path+" "+subcommand.Name)
+	}
 }
 
 func commandUsage(command *ffcli.Command) string {
-	return fmt.Sprintf("Usage:\n  %s\n\n%s\n", command.ShortUsage, command.ShortHelp)
+	return commandUsageForPath(command, command.Name)
+}
+
+func commandUsageForPath(command *ffcli.Command, path string) string {
+	var usage strings.Builder
+	shortUsage := command.ShortUsage
+	if len(command.Subcommands) > 0 {
+		shortUsage = path + " <command> [flags]"
+	}
+	fmt.Fprintf(&usage, "Usage:\n  %s\n\n", shortUsage)
+
+	help := strings.TrimSpace(command.LongHelp)
+	if help == "" {
+		help = strings.TrimSpace(command.ShortHelp)
+	}
+	if help != "" {
+		usage.WriteString(help)
+		usage.WriteString("\n")
+	}
+
+	if len(command.Subcommands) > 0 {
+		usage.WriteString("\nCommands:\n")
+		for _, subcommand := range command.Subcommands {
+			fmt.Fprintf(&usage, "  %-14s %s\n", subcommand.Name, subcommand.ShortHelp)
+		}
+		usage.WriteString("\nRun \"")
+		usage.WriteString(path)
+		usage.WriteString(" <command> --help\" for command help.\n")
+	}
+
+	if command.FlagSet != nil {
+		var flags []*flag.Flag
+		command.FlagSet.VisitAll(func(flagValue *flag.Flag) {
+			flags = append(flags, flagValue)
+		})
+		if len(flags) > 0 {
+			usage.WriteString("\nFlags:\n")
+			for _, flagValue := range flags {
+				name, flagHelp := flag.UnquoteUsage(flagValue)
+				fmt.Fprintf(&usage, "  --%s", flagValue.Name)
+				if name != "" {
+					fmt.Fprintf(&usage, " %s", name)
+				}
+				fmt.Fprintf(&usage, "\n      %s", flagHelp)
+				if flagValue.DefValue != "" &&
+					flagValue.DefValue != "false" &&
+					flagValue.DefValue != "0" {
+					fmt.Fprintf(&usage, " (default %q)", flagValue.DefValue)
+				}
+				usage.WriteString("\n")
+			}
+		}
+	}
+
+	return usage.String()
 }

@@ -35,6 +35,9 @@ jobs:
       - name: Check formatting
         run: make format-check
 
+      - name: Check command reference
+        run: make docs-check
+
       - name: Run go vet
         run: make vet
 
