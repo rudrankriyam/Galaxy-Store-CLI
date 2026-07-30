@@ -315,6 +315,13 @@ func openTokenStore() (TokenStore, error) {
 	return nil, err
 }
 
+// OpenTokenStore opens the best available OS-native secure token store. A nil
+// store with no error means this operating environment has no supported secure
+// backend; callers may still use a complete environment credential pair.
+func OpenTokenStore() (TokenStore, error) {
+	return openTokenStore()
+}
+
 // LoadPrivateKey validates file permissions and parses a PKCS#1 or PKCS#8 RSA
 // private key.
 func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
