@@ -6,8 +6,8 @@ An unofficial CLI for Galaxy Store developers.
 [Galaxy Store Developer API](https://developer.samsung.com/galaxy-store/galaxy-store-developer-api.html)
 as non-interactive commands for local development and CI. It covers
 service-account authentication, app and binary operations, uploads, closed
-beta, staged rollouts, buyer reviews, Samsung IAP, statistics, and guarded raw
-API requests.
+beta, staged rollouts, buyer reviews, Samsung IAP, statistics, safe metadata
+sync, resumable review submission, and guarded raw API requests.
 
 > [!IMPORTANT]
 > This project is not affiliated with, endorsed by, or sponsored by Samsung.
@@ -19,9 +19,10 @@ No public release has been published. The repository builds and tests source
 installs, Homebrew HEAD installs, and snapshot archives, but it does not publish
 a GitHub Release, Homebrew package, or WinGet package.
 
-The commands listed below are implemented. Multi-step shipping commands such as
-metadata sync, `ship`, status waiting, resumable workflows, and shell completion
-remain future work; see [Architecture](docs/ARCHITECTURE.md).
+The commands listed below are implemented. `gsc ship plan|run` provides one
+fixed, resumable `REGISTRATION` pipeline through review submission. It never
+changes distribution to `FOR_SALE`. Arbitrary workflow engines and shell
+completion remain future work; see [Architecture](docs/ARCHITECTURE.md).
 
 ## Install from source
 
@@ -135,7 +136,9 @@ nonzero exit code when required credentials are missing or invalid.
 | Command | Implemented subcommands |
 | --- | --- |
 | `gsc auth` | `login`, `status`, `revoke` |
-| `gsc apps` | `list`, `view`, `update`, `submit`, `status update` |
+| `gsc apps` | `list`, `view`, `update`, `submit`, `status update`, `status wait` |
+| `gsc metadata` | `pull`, `validate`, `diff`, `apply` |
+| `gsc ship` | `plan`, `run` |
 | `gsc binaries` | `add`, `update`, `delete` |
 | `gsc uploads` | `sessions create`, `file` |
 | `gsc beta` | `testers list`, `testers update` |
@@ -196,11 +199,13 @@ The independent research and competitor links remain in
 
 ## Agent skills
 
-Six repo-local skills under [`.agents/skills`](.agents/skills) teach coding
+Seven repo-local skills under [`.agents/skills`](.agents/skills) teach coding
 agents how to operate `gsc` safely:
 
 - general CLI discovery, authentication, output, and failure handling;
 - app update, binary upload, submission, and distribution;
+- lossless metadata pull, validation, semantic diff, drift-checked apply, and
+  readback verification;
 - closed beta and staged rollout management;
 - buyer review triage and seller replies;
 - IAP catalog, transaction, subscription, order, and receipt workflows;

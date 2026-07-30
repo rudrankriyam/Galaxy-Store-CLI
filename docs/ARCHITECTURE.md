@@ -45,7 +45,16 @@ gsc
 │   ├── update
 │   ├── submit
 │   └── status
-│       └── update
+│       ├── update
+│       └── wait
+├── metadata
+│   ├── pull
+│   ├── validate
+│   ├── diff
+│   └── apply
+├── ship
+│   ├── plan
+│   └── run
 ├── binaries
 │   ├── add
 │   ├── update
@@ -106,24 +115,24 @@ gsc
 operation. Receipt verification sits under `iap`, but it calls Samsung's public
 receipt endpoint without a Developer API token.
 
-## Primitives now, orchestration later
+## Primitives and typed orchestration
 
-The implemented commands are direct, independently usable API operations.
-Shipping an app currently means calling the primitives in order: create an
-upload session, upload a file, register the binary, update content, then submit.
-Each mutation produces its own dry-run plan and requires its own confirmation.
+Direct API primitives remain independently usable and individually confirmed.
+For the common update path, `gsc ship plan|run` composes one fixed pipeline:
+validate an exact `REGISTRATION` target, create an upload session, upload and
+register one v2 binary, apply a drift-checked metadata bundle, verify readback,
+and submit for review.
 
-The repository does not register commands for these higher-level jobs yet:
+The pipeline uses a private local checkpoint and resumes only after reconciling
+durable hints with Samsung. It does not blindly retry ambiguous binary
+registration or submission. Shipping stops at review submission and never
+changes distribution status to `FOR_SALE`; publication remains a separate,
+explicitly authorized command.
 
-- metadata pull, diff, validation, and apply;
-- a single app plan or ship command;
-- submission and status waiting with recovery;
-- resumable multi-step workflows;
-- shell completion.
-
-Future orchestration should compose service interfaces in-process. It must not
-shell out to `gsc`, bypass the existing confirmation boundary, or turn a timed
-out write into an automatic retry.
+Arbitrary workflow engines and shell completion are not implemented. Any later
+orchestration should compose service interfaces in-process, preserve the
+existing confirmation boundaries, and reconcile timed-out writes before
+deciding whether another mutation is safe.
 
 ## Package boundaries
 
@@ -134,9 +143,11 @@ internal/cli/shared/         mutation mode, dry-run plan, usage errors
 internal/catalog/            checked-in operation and limitation catalog
 internal/config/             non-secret named-profile metadata
 internal/credentials/        environment, config, and keychain resolution
+internal/metadata/           lossless bundles, semantic plans, drift checks
 internal/output/             JSON, table, and Markdown rendering
 internal/samsung/            HTTP client, auth, errors, and API services
 internal/session/            resolved authenticated client sessions
+internal/ship/               typed plan, secure checkpoint, resume engine
 ```
 
 The current API service packages cover apps, auth, beta testers, content and
@@ -144,8 +155,8 @@ uploads, IAP families, public receipts, reviews, rollouts, and statistics.
 Command packages validate flags, open the required service only after local
 checks, call one service operation, and render the result.
 
-No `internal/workflow`, `internal/plan`, or metadata-sync package exists yet.
-Those names describe planned work, not hidden functionality.
+No general-purpose `internal/workflow` engine exists. Metadata and shipping use
+purpose-built typed packages instead of a user-programmable workflow language.
 
 ## Authentication and profiles
 
@@ -199,9 +210,10 @@ headers itself.
 
 GET and HEAD requests may retry bounded transport failures, HTTP 408, HTTP 429,
 and selected 5xx responses while honoring `Retry-After`. Mutations and
-multipart uploads aren't blindly replayed. A future workflow that sees an
-ambiguous write timeout must read current state before deciding whether a new
-write is safe.
+multipart uploads aren't blindly replayed. The ship engine checkpoints pending
+writes and reads current state before deciding whether recovery can continue;
+an ambiguous binary registration or submission halts instead of issuing an
+unsafe duplicate.
 
 ## Samsung-specific safety
 
@@ -308,6 +320,7 @@ The repository contains packaging validation, not a published distribution:
 - SHA-256 checksums, per-archive SBOMs, and source snapshots;
 - a Homebrew HEAD formula tested through an isolated local tap;
 - generated WinGet candidate manifests and local schema checks;
+- a commit-pinned composite GitHub Action that builds and runs `gsc` from source;
 - a guarded manual workflow that can create a draft from an existing tag.
 
 Snapshot workflows use read-only repository permissions and upload short-lived

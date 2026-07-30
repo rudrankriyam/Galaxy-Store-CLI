@@ -6,8 +6,8 @@ directory, and adds it to `PATH`. It does not download a release, tag, or
 package-manager artifact, and it does not accept Samsung credentials.
 
 Pin both the checkout action and Galaxy Store CLI to reviewed, full commit
-SHAs. The example below pins the first commit that contains the reviewed
-`action.yml`:
+SHAs. The example below pins a reviewed commit containing the complete command
+surface documented in this repository:
 
 ```yaml
 permissions:
@@ -19,7 +19,7 @@ steps:
 
   - name: Set up Galaxy Store CLI
     id: gsc
-    uses: rudrankriyam/Galaxy-Store-CLI@acd2af64f4d43eff0ce7c27c2a841e0aa1bffd24
+    uses: rudrankriyam/Galaxy-Store-CLI@b68a0ec61b0fde87b987bc9819babc6f880cbf31
 
   - name: Inspect the source-built CLI
     shell: bash
