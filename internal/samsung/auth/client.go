@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 const (
@@ -17,6 +18,7 @@ const (
 	DefaultBaseURL = "https://devapi.samsungapps.com"
 
 	maxResponseSize = 1 << 20
+	defaultTimeout  = 60 * time.Second
 )
 
 // HTTPDoer is implemented by *http.Client.
@@ -68,7 +70,7 @@ func NewClient(options ClientOptions) (*Client, error) {
 
 	httpClient := options.HTTPClient
 	if httpClient == nil {
-		httpClient = http.DefaultClient
+		httpClient = &http.Client{Timeout: defaultTimeout}
 	}
 
 	return &Client{

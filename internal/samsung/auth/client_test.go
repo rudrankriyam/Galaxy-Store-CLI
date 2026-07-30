@@ -189,6 +189,22 @@ func TestNewClientValidatesBaseURL(t *testing.T) {
 	}
 }
 
+func TestNewClientUsesBoundedDefaultHTTPTimeout(t *testing.T) {
+	t.Parallel()
+
+	client, err := NewClient(ClientOptions{})
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+	httpClient, ok := client.httpClient.(*http.Client)
+	if !ok {
+		t.Fatalf("HTTP client = %T, want *http.Client", client.httpClient)
+	}
+	if httpClient.Timeout != defaultTimeout {
+		t.Fatalf("timeout = %v, want %v", httpClient.Timeout, defaultTimeout)
+	}
+}
+
 func newTestClient(t *testing.T, baseURL string, httpClient HTTPDoer) *Client {
 	t.Helper()
 	client, err := NewClient(ClientOptions{BaseURL: baseURL, HTTPClient: httpClient})
