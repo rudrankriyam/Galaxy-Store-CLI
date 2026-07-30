@@ -114,3 +114,17 @@ func TestRunAuthWithoutSubcommandReturnsUsage(t *testing.T) {
 		t.Fatalf("stderr = %q, want auth usage diagnostic", stderr.String())
 	}
 }
+
+func TestRunAppsWithoutSubcommandReturnsUsage(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	exitCode := run([]string{"apps"}, "dev-test", &stdout, &stderr)
+
+	if exitCode != ExitUsage {
+		t.Fatalf("exit code = %d, want %d", exitCode, ExitUsage)
+	}
+	if !strings.Contains(stderr.String(), "apps requires a command") {
+		t.Fatalf("stderr = %q, want apps usage diagnostic", stderr.String())
+	}
+}

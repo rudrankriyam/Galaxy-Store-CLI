@@ -11,6 +11,7 @@ import (
 	"github.com/peterbourgon/ff/v3/ffcli"
 	"golang.org/x/term"
 
+	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/appscmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/authcmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/discovery"
 )
@@ -52,9 +53,18 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 			return fmt.Errorf("initialize authentication: %w", err)
 		}
 	}
+	appsCommand := unavailableCommand("apps", "View apps registered in Galaxy Store Seller Portal.")
+	if dependencies, err := appscmd.DefaultDependencies(stdout, stderr, isTerminal); err == nil {
+		appsCommand = appscmd.NewCommand(dependencies)
+	} else {
+		appsCommand.Exec = func(context.Context, []string) error {
+			return fmt.Errorf("initialize app commands: %w", err)
+		}
+	}
 
 	root.Subcommands = []*ffcli.Command{
 		authCommand,
+		appsCommand,
 		discovery.CapabilitiesCommand(stdout, isTerminal),
 		discovery.SchemaCommand(stdout, isTerminal),
 		discovery.SearchCommand(stdout, isTerminal),
