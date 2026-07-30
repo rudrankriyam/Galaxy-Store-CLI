@@ -1,0 +1,4 @@
+interface:
+  display_name: "Galaxy Store Review Management"
+  short_description: "Read and reply to Galaxy Store reviews"
+  default_prompt: "Use $gsc-review-management to triage and respond to Galaxy Store buyer reviews."

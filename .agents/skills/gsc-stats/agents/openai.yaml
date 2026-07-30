@@ -1,0 +1,4 @@
+interface:
+  display_name: "Galaxy Store Statistics"
+  short_description: "Query seller and app performance metrics"
+  default_prompt: "Use $gsc-stats to query Galaxy Store seller or content performance metrics."

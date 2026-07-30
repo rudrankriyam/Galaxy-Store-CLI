@@ -1,0 +1,4 @@
+interface:
+  display_name: "Galaxy Store IAP Management"
+  short_description: "Manage Galaxy Store IAP operations safely"
+  default_prompt: "Use $gsc-iap-management to inspect or change Galaxy Store in-app purchase state safely."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Galaxy Store CLI Usage"
+  short_description: "Use gsc safely in scripts and CI"
+  default_prompt: "Use $gsc-cli-usage to discover and run the correct Galaxy Store CLI command safely."

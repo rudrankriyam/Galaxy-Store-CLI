@@ -1,0 +1,4 @@
+interface:
+  display_name: "Galaxy Store Release Flow"
+  short_description: "Prepare and ship Galaxy Store app changes"
+  default_prompt: "Use $gsc-release-flow to plan and execute a safe Galaxy Store app update."

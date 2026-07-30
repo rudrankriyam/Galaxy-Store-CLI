@@ -1,0 +1,4 @@
+interface:
+  display_name: "Galaxy Store Beta and Rollouts"
+  short_description: "Manage closed beta and staged rollouts"
+  default_prompt: "Use $gsc-beta-rollouts to inspect or change a Galaxy Store beta or staged rollout safely."
