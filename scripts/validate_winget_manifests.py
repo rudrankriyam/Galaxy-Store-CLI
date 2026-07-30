@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import re
 from pathlib import Path
-from urllib.parse import urlparse
 
 from generate_winget_manifests import (
     MANIFEST_VERSION,
@@ -15,6 +14,9 @@ from generate_winget_manifests import (
     SUPPORTED_ARCHITECTURES,
     schema_header,
     sha256_file,
+    validate_installer,
+    validate_installer_url,
+    validate_version,
 )
 
 
@@ -97,7 +99,7 @@ def validate(manifest_dir: Path, installer: Path | None = None) -> list[Path]:
             raise ValueError(f"{kind} manifest has the wrong schema header")
         if scalar(text, "PackageIdentifier") != PACKAGE_IDENTIFIER:
             raise ValueError(f"{kind} manifest has the wrong PackageIdentifier")
-        versions.add(scalar(text, "PackageVersion"))
+        versions.add(validate_version(scalar(text, "PackageVersion")))
         if scalar(text, "ManifestType") != kind:
             raise ValueError(f"{kind} manifest has the wrong ManifestType")
         if scalar(text, "ManifestVersion") != MANIFEST_VERSION:
@@ -124,18 +126,13 @@ def validate(manifest_dir: Path, installer: Path | None = None) -> list[Path]:
     if sequence(installer_text, "Commands") != [PACKAGE_COMMAND]:
         raise ValueError(f"Commands must contain only {PACKAGE_COMMAND}")
 
-    installer_url = scalar(installer_text, "InstallerUrl")
-    parsed_url = urlparse(installer_url)
-    if parsed_url.scheme != "https" or not parsed_url.netloc:
-        raise ValueError("InstallerUrl must be an absolute HTTPS URL")
+    validate_installer_url(scalar(installer_text, "InstallerUrl"))
 
     checksum = scalar(installer_text, "InstallerSha256")
     if not re.fullmatch(r"[A-F0-9]{64}", checksum):
         raise ValueError("InstallerSha256 must be 64 uppercase hexadecimal characters")
     if installer is not None:
-        if installer.resolve().name.casefold() != "gsc.exe":
-            raise ValueError("local installer must be named gsc.exe")
-        actual = sha256_file(installer.resolve())
+        actual = sha256_file(validate_installer(installer))
         if checksum != actual:
             raise ValueError(
                 f"InstallerSha256 mismatch: manifest={checksum}, local={actual}"

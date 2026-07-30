@@ -126,6 +126,51 @@ class WingetManifestTests(unittest.TestCase):
                 output_dir=self.root / "winget",
             )
 
+    def test_validator_rejects_a_credential_bearing_installer_url(self) -> None:
+        generated = self.generate()
+        installer_manifest = generated[2]
+        text = installer_manifest.read_text(encoding="utf-8")
+        installer_manifest.write_text(
+            text.replace(
+                "https://example.invalid/snapshots/gsc.exe",
+                "https://token@example.invalid/snapshots/gsc.exe",
+            ),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(ValueError, "must not contain credentials"):
+            validator.validate(generated[0].parent, self.installer)
+
+    def test_validator_rejects_a_non_executable_installer_url(self) -> None:
+        generated = self.generate()
+        installer_manifest = generated[2]
+        text = installer_manifest.read_text(encoding="utf-8")
+        installer_manifest.write_text(
+            text.replace(
+                "https://example.invalid/snapshots/gsc.exe",
+                "https://example.invalid/snapshots/gsc.zip",
+            ),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(ValueError, "Windows .exe asset"):
+            validator.validate(generated[0].parent, self.installer)
+
+    def test_validator_rejects_an_invalid_package_version(self) -> None:
+        generated = self.generate()
+        for manifest in generated:
+            text = manifest.read_text(encoding="utf-8")
+            manifest.write_text(
+                text.replace(
+                    "PackageVersion: 0.0.0-snapshot",
+                    "PackageVersion: latest",
+                ),
+                encoding="utf-8",
+            )
+
+        with self.assertRaisesRegex(ValueError, "semver-like"):
+            validator.validate(generated[0].parent, self.installer)
+
 
 if __name__ == "__main__":
     unittest.main()
