@@ -30,10 +30,7 @@ func run(args []string, version string, stdout io.Writer, stderr io.Writer) int 
 
 	if err := root.Run(ctx); err != nil {
 		fmt.Fprintf(stderr, "Error: %v\n", err)
-		if errors.Is(err, errUsage) {
-			return ExitUsage
-		}
-		return ExitError
+		return exitCodeForError(err)
 	}
 	return ExitSuccess
 }
