@@ -362,7 +362,7 @@ func ParsePrivateKey(data []byte) (*rsa.PrivateKey, error) {
 			return nil, fmt.Errorf("%w: key is not RSA", ErrInvalidPrivateKey)
 		}
 		if err := rsaKey.Validate(); err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrInvalidPrivateKey, err)
+			return nil, fmt.Errorf("%w: %w", ErrInvalidPrivateKey, err)
 		}
 		return rsaKey, nil
 	}
@@ -372,7 +372,7 @@ func ParsePrivateKey(data []byte) (*rsa.PrivateKey, error) {
 		return nil, fmt.Errorf("%w: unsupported RSA key encoding", ErrInvalidPrivateKey)
 	}
 	if err := rsaKey.Validate(); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidPrivateKey, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidPrivateKey, err)
 	}
 	return rsaKey, nil
 }

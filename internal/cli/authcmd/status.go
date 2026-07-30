@@ -73,7 +73,7 @@ func runStatus(ctx context.Context, dependencies Dependencies, options statusOpt
 		return safeOperationError("check access token", err, resolved.AccessToken)
 	}
 	if response == nil || !response.OK {
-		return errors.New("Samsung returned an invalid token status response")
+		return errors.New("samsung returned an invalid token status response")
 	}
 	return dependencies.Printer.Print(format, statusResult{
 		Profile:          resolved.Profile,
