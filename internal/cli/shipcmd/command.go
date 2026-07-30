@@ -39,6 +39,29 @@ type Dependencies struct {
 	AcquireLock func(checkpointPath string) (Lock, error)
 }
 
+// DefaultDependencies creates production dependencies without opening a
+// credential profile until ship run has validated its local inputs and
+// received explicit confirmation.
+func DefaultDependencies(
+	stdout io.Writer,
+	stderr io.Writer,
+	isTerminal output.TerminalDetector,
+) (Dependencies, error) {
+	openRemote, err := DefaultOpenRemote()
+	if err != nil {
+		return Dependencies{}, err
+	}
+	return Dependencies{
+		Stderr:     stderr,
+		Printer:    output.NewPrinter(stdout, isTerminal),
+		OpenRemote: openRemote,
+		NewStore: func(path string) (ship.CheckpointStore, error) {
+			return ship.NewFileCheckpointStore(path)
+		},
+		AcquireLock: AcquireFileLock,
+	}, nil
+}
+
 type planOptions struct {
 	ContentID                   string
 	BinaryPath                  string

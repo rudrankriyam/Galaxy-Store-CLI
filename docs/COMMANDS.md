@@ -21,6 +21,7 @@ gsc <command> [flags]
 | `gsc auth` | Manage Galaxy Store service-account authentication. |
 | `gsc apps` | View, update, and submit apps registered in Galaxy Store Seller Portal. |
 | `gsc metadata` | Pull, validate, diff, and safely apply Galaxy Store metadata. |
+| `gsc ship` | Plan and run a typed, resumable Galaxy Store review submission. |
 | `gsc binaries` | Manage app binaries through Samsung's current v2 API. |
 | `gsc uploads` | Create upload sessions and stream files to Samsung. |
 | `gsc beta` | Manage Galaxy Store closed beta testers. |
@@ -397,6 +398,74 @@ gsc metadata apply --content-id ID --app-status SALE|REGISTRATION [--dry-run | -
 | `--dry-run` | `false` | Fetch live metadata and print the semantic plan without updating it |
 | `--output string` | `auto` | Output format: auto, json, table, or markdown |
 | `--profile string` | `` | Credential profile |
+
+## `gsc ship`
+
+Plan and run the fixed Galaxy Store shipping pipeline.
+
+The pipeline validates one exact REGISTRATION target, uploads and registers one
+binary through the current v2 API, applies a drift-checked metadata bundle,
+verifies the readback, and submits the app for review. It never changes
+distribution status to FOR_SALE.
+
+### Usage
+
+```text
+gsc ship <command> [flags]
+```
+
+### Commands
+
+| Command | Description |
+| --- | --- |
+| `gsc ship plan` | Build and print a deterministic shipping plan entirely offline. |
+| `gsc ship run` | Run or resume the typed pipeline through review submission. |
+
+## `gsc ship plan`
+
+Build and print a deterministic shipping plan entirely offline.
+
+### Usage
+
+```text
+gsc ship plan --content-id ID --binary PATH --metadata-dir PATH --gms Y|N [flags]
+```
+
+### Flags
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--binary string` | `` | Required APK or AAB path |
+| `--content-id string` | `` | Required 12-digit Galaxy Store content ID |
+| `--copy-device-config-from string` | `` | Existing binary sequence whose device configuration should be copied |
+| `--gms string` | `` | Required Google Mobile Services declaration: Y or N |
+| `--metadata-dir string` | `metadata` | Complete metadata bundle directory |
+| `--output string` | `auto` | Output format: auto, json, table, or markdown |
+
+## `gsc ship run`
+
+Run or resume the typed pipeline through review submission.
+
+### Usage
+
+```text
+gsc ship run --content-id ID --binary PATH --metadata-dir PATH --gms Y|N [--dry-run | --confirm] [flags]
+```
+
+### Flags
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--binary string` | `` | Required APK or AAB path |
+| `--checkpoint string` | `` | Private checkpoint path (default .gsc/ship-CONTENT_ID.json) |
+| `--confirm` | `false` | Confirm upload, binary registration, metadata apply, and review submission |
+| `--content-id string` | `` | Required 12-digit Galaxy Store content ID |
+| `--copy-device-config-from string` | `` | Existing binary sequence whose device configuration should be copied |
+| `--dry-run` | `false` | Print the offline plan without opening credentials or changing local or remote state |
+| `--gms string` | `` | Required Google Mobile Services declaration: Y or N |
+| `--metadata-dir string` | `metadata` | Complete metadata bundle directory |
+| `--output string` | `auto` | Output format: auto, json, table, or markdown |
+| `--profile string` | `` | Credential profile (defaults to environment or configured profile) |
 
 ## `gsc binaries`
 

@@ -26,6 +26,7 @@ import (
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/reviewscmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/rolloutscmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/shared"
+	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/shipcmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/statscmd"
 	"github.com/rudrankriyam/Galaxy-Store-CLI/internal/cli/statuswaitcmd"
 )
@@ -153,6 +154,20 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 		metadataCommand.Exec = initializationError("metadata commands", err)
 	}
 
+	shipCommand := unavailableCommand(
+		"ship",
+		"Plan and run a typed, resumable Galaxy Store review submission.",
+	)
+	if dependencies, err := shipcmd.DefaultDependencies(
+		stdout,
+		stderr,
+		isTerminal,
+	); err == nil {
+		shipCommand = shipcmd.NewCommand(dependencies)
+	} else {
+		shipCommand.Exec = initializationError("shipping commands", err)
+	}
+
 	betaCommand := unavailableCommand("beta", "Manage Galaxy Store closed beta testers.")
 	if dependencies, err := betacmd.DefaultDependencies(stdout, stderr, isTerminal); err == nil {
 		betaCommand = betacmd.NewCommand(dependencies)
@@ -257,6 +272,7 @@ func RootCommand(version string, stdout io.Writer, stderr io.Writer) *ffcli.Comm
 		authCommand,
 		appsCommand,
 		metadataCommand,
+		shipCommand,
 		binariesCommand,
 		uploadsCommand,
 		betaCommand,
