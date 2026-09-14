@@ -1,13 +1,13 @@
 module github.com/rudrankriyam/Galaxy-Store-CLI
 
-go 1.25.12
+go 1.26.0
 
 require (
 	github.com/99designs/keyring v1.2.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/peterbourgon/ff/v3 v3.4.0
-	golang.org/x/sys v0.47.0
-	golang.org/x/term v0.45.0
+	golang.org/x/sys v0.48.0
+	golang.org/x/term v0.46.0
 )
 
 require (
